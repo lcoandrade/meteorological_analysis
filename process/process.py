@@ -80,6 +80,7 @@ class ProcessStation():
             axs[row, col].plot(
                 data_for_month.DAY,
                 data_for_month[self.config["variable"]],
+                label=self.config["variable"],
                 color=sns_blue,
                 alpha=0.1,
             )
@@ -138,6 +139,7 @@ class ProcessStation():
             axs[i].plot(
                 data_for_year.MONTH,
                 data_for_year[self.config["variable"]],
+                label=self.config["variable"],
                 color=sns_blue,
                 alpha=0.1,
             )
@@ -165,8 +167,8 @@ class ProcessStation():
         stl_kwargs = {"seasonal_deg": 0}
         model = MSTL(
             self.data[self.config["variable"]],
-            periods=self.config['periods'],
-            #stl_kwargs=stl_kwargs,
+            periods=self.config["periods"],
+            stl_kwargs=stl_kwargs,
         )
         res = model.fit()
 
