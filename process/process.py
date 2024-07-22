@@ -1,9 +1,11 @@
-from statsmodels.tsa.seasonal import MSTL
+from statsmodels.tsa.seasonal import MSTL, seasonal_decompose
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 import yaml
 import argparse
+from scipy import fftpack
+import numpy as np
 
 class ProcessStation():
     def __init__(self, config) -> None:
@@ -12,6 +14,7 @@ class ProcessStation():
         self.data = pd.read_csv(filepath_or_buffer=config['file_path'], header=0, sep=';')
 
     def preprocess(self):
+        # Calculating DATE from YEAR and DOY
         self.data["DATE"] = pd.to_datetime(
             self.data["YEAR"] * 1000 + self.data["DOY"], format="%Y%j"
         )
@@ -20,6 +23,8 @@ class ProcessStation():
 
         self.data["DAY"] = self.data.index.day
         self.data["MONTH"] = self.data.index.month
+
+        self.data = self.data.dropna()
 
     def plot_data(self):
         plt.plot(
@@ -55,115 +60,167 @@ class ProcessStation():
             self.data.loc[index, self.config["variable"]] = smoothed_value
 
     def check_monthly_trends(self):
+        variable = self.config["variable"]
+
         sns_blue = sns.color_palette(as_cmap=True)[0]
 
-        # Defina uma figura e um conjunto de subplots com 4 linhas e 3 colunas
+        # Define a figure and a set of subplots with 4 lines and 3 columns
         fig, axs = plt.subplots(4, 3, figsize=(15, 15))
 
-        # Agrupe os dados por mês e dia, calcule a média para cada grupo e reorganize os dados
-        monthly_mean = (
-            self.data.groupby(["MONTH", "DAY"])[self.config["variable"]]
-            .mean()
-            .unstack()
-        )
+        # Group the data by month and day, calculate the mean for each group and reorganize de data
+        monthly_mean = self.data.groupby(["MONTH", "DAY"])[variable].mean().unstack()
 
-        # Crie um loop para iterar pelos meses (de 01 a 12)
+        # Loop over the months (1 to 12)
         for i, month in enumerate(range(1, 13)):
-            # Calcule as coordenadas do subplot atual
+            # Calculate the coordinates of the current subplot
             row = i // 3
             col = i % 3
 
-            # Filtrar os dados para o mês atual
+            # Filtering the data for the current month
             data_for_month = self.data[self.data.MONTH == month]
 
-            # Plotar os dados no subplot correspondente
+            # Plot the data in the correspondent subplot
             axs[row, col].plot(
                 data_for_month.DAY,
-                data_for_month[self.config["variable"]],
-                label=self.config["variable"],
+                data_for_month[variable],
+                label=variable,
                 color=sns_blue,
                 alpha=0.1,
             )
             axs[row, col].set_title(f"Month {str(month)}")
             axs[row, col].legend()
 
-            # Selecione a média mensal para o mês atual
+            # Select the monthly mean for the current month
             monthly_data = monthly_mean.loc[month]
 
-            # Plotar a média mensal no subplot correspondente
+            # Plot the monthly mean in the correspondent subplot
             axs[row, col].plot(
                 monthly_data,
-                label=f"Mean T2M_MAX",
+                label=f"Mean {variable}",
                 color="blue",
                 alpha=1,
             )
             axs[row, col].legend()
 
-        # Ajustar o layout e rótulos
+        # Set layout and labels
         plt.tight_layout()
         plt.savefig(fname=self.config["monthly_trends_plot_path"], format=self.config['plot_format'])
         plt.close()
 
     def check_yearly_trends(self):
+        variable = self.config["variable"]
+
         sns_blue = sns.color_palette(as_cmap=True)[0]
 
-        # Obtenha a lista de anos únicos no DataFrame
+        # Get the unique years from the data frame
         unique_years = self.data["YEAR"].unique()
 
-        # Defina o número de subplots com base na quantidade de anos únicos
+        # Define the subplots number
         num_subplots = len(unique_years)
 
-        # Calcule o número de linhas e colunas com base no número de subplots desejados
+        # Calculate rows and cols to plot
         num_cols = 3
         num_rows = num_subplots // num_cols
 
-        # Crie a figura e os subplots
+        # Create figure and subplots
         fig, axs = plt.subplots(num_rows, num_cols, figsize=(15, 30))
 
-        # Flatten a matriz de subplots para simplificar o loop
+        # Flatten the subplots matrix to simplify the loop
         axs = axs.flatten()
 
-        # Agrupe os dados por ano e mês, calcule a média para cada grupo e reorganize os dados
-        yearly_mean = (
-            self.data.groupby(["YEAR", "MONTH"])[self.config["variable"]]
-            .mean()
-            .unstack()
-        )
+        # Group the data by month and day, calculate the mean for each group and reorganize de data
+        yearly_mean = self.data.groupby(["YEAR", "MONTH"])[variable].mean().unstack()
 
-        # Crie um loop para iterar pelos anos
+        # Loop over the year
         for i, year in enumerate(unique_years[: num_cols * num_rows]):
-            # Filtrar os dados para o mês atual
+            # Filtering the data for the current month
             data_for_year = self.data[self.data.YEAR == year]
 
-            # Plotar os dados no subplot correspondente
+            # Plot the data in the correspondent subplot
             axs[i].plot(
                 data_for_year.MONTH,
-                data_for_year[self.config["variable"]],
-                label=self.config["variable"],
+                data_for_year[variable],
+                label=variable,
                 color=sns_blue,
                 alpha=0.1,
             )
             axs[i].set_title(f"Year {str(year)}")
             axs[i].legend()
 
-            # Selecione a média mensal para o mês atual
+            # Select the yearly mean for the current month
             yearly_data = yearly_mean.loc[year]
 
-            # Plotar a média mensal no subplot correspondente
+            # Plot the yearly mean in the correspondent subplot
             axs[i].plot(
                 yearly_data,
-                label=f"Mean T2M_MAX",
+                label=f"Mean {variable}",
                 color="blue",
                 alpha=1,
             )
             axs[i].legend()
 
-        # Ajustar o layout e rótulos
+        # Set layout and labels
         plt.tight_layout()
         plt.savefig(fname=self.config["yearly_trends_plot_path"], format=self.config['plot_format'])
         plt.close()
 
-    def series_decomposition(self):
+    def get_periods(self):
+        # Calculate the fft of the data
+        fourier = fftpack.fft(self.data.to_numpy())
+
+        N = len(self.data)
+        freqs = fftpack.fftfreq(N)
+        periods = 1 / freqs
+
+        indices = np.argsort(np.abs(fourier))[::-1]
+        top_idx = indices[indices != 0][:5]
+
+        top_periods = np.abs(periods[top_idx])
+
+        # Imprimir os períodos encontrados
+        print("Found periods:")
+        for i, period in enumerate(top_periods):
+            print(f"Peak {i+1}: {period:.2f} unities of time")
+
+        # Plot the Furier spectrum for visualizations purposes
+        plt.figure(figsize=(10, 6))
+        plt.plot(periods, np.abs(fourier))
+        plt.title("Fourier spectrum")
+        plt.xlabel("Period (time unity)")
+        plt.ylabel("Amplitude")
+        plt.grid(True)
+        plt.savefig(
+            fname=self.config["furier_plot_path"], format=self.config["plot_format"]
+        )
+        plt.close()
+
+    def single_decompose(self):
+        results = seasonal_decompose(
+            x=self.data[self.config["variable"]],
+            model="multiplicative",
+            period=3141,
+        )
+
+        plt.figure(figsize=(12, 10))
+        plt.subplot(411)
+        plt.plot(self.data[self.config["variable"]], label="Series")
+        plt.legend(loc="best")
+        plt.subplot(412)
+        plt.plot(results.trend, label="Trend")
+        plt.legend(loc="best")
+        plt.subplot(413)
+        plt.plot(results.seasonal, label="Seasonal")
+        plt.legend(loc="best")
+        plt.subplot(414)
+        plt.plot(results.resid, label="Residual")
+        plt.legend(loc="best")
+        plt.savefig(
+            fname=self.config["test_path"],
+            format=self.config["plot_format"],
+        )
+        plt.close()
+
+    def multi_decomposition(self):
         stl_kwargs = {"seasonal_deg": 0}
         model = MSTL(
             self.data[self.config["variable"]],
@@ -180,6 +237,8 @@ class ProcessStation():
         plt.rcParams["figure.figsize"] = [14, 10]
         res.plot()
         plt.savefig(fname=self.config["decomposition_plot_path"], format=self.config['plot_format'])
+        plt.close()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -194,4 +253,6 @@ if __name__ == "__main__":
     processor.plot_data()
     processor.check_monthly_trends()
     processor.check_yearly_trends()
-    processor.series_decomposition()
+    processor.get_periods()
+    # processor.multi_decompose()
+    processor.single_decompose()

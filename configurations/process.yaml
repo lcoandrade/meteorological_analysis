@@ -4,5 +4,7 @@ plot_format: 'pdf'
 data_plot_path: 'plots/data.pdf'
 monthly_trends_plot_path: 'plots/monthly_trends.pdf'
 yearly_trends_plot_path: 'plots/yearly_trends.pdf'
-periods: [730]
+periods: [365]
 decomposition_plot_path: 'plots/decomposition.pdf'
+furier_plot_path: 'plots/furier.pdf'
+test_path: 'plots/test.pdf'
