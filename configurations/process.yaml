@@ -1,4 +1,6 @@
 file_path: 'stations/inaquito.csv'
+decimal: '.'
+separator: ';'
 variables: ['T2M_MAX', 'T2M_MIN']
 variable_under_analysis: 'T2M_MEAN'
 plot_format: 'pdf'

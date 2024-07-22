@@ -11,7 +11,12 @@ class ProcessStation():
     def __init__(self, config) -> None:
         self.config = config
 
-        self.data = pd.read_csv(filepath_or_buffer=config['file_path'], header=0, sep=';')
+        self.data = pd.read_csv(
+            filepath_or_buffer=config["file_path"],
+            header=0,
+            sep=config["separator"],
+            decimal=config["decimal"],
+        )
 
     def preprocess(self):
         # Calculating DATE from YEAR and DOY
