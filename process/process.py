@@ -165,8 +165,10 @@ class ProcessStation():
         plt.close()
 
     def get_periods(self):
+        filtered_data = self.data[self.config["variable"]]
+
         # Calculate the fft of the data
-        fourier = fftpack.fft(self.data.to_numpy())
+        fourier = fftpack.fft(filtered_data.to_numpy())
 
         N = len(self.data)
         freqs = fftpack.fftfreq(N)
@@ -179,8 +181,12 @@ class ProcessStation():
 
         # Imprimir os períodos encontrados
         print("Found periods:")
+        ret = []
         for i, period in enumerate(top_periods):
             print(f"Peak {i+1}: {period:.2f} unities of time")
+            value = int(period)
+            if value not in ret:
+                ret.append(value)
 
         # Plot the Furier spectrum for visualizations purposes
         plt.figure(figsize=(10, 6))
@@ -194,11 +200,13 @@ class ProcessStation():
         )
         plt.close()
 
-    def single_decompose(self):
+        return tuple(ret)
+
+    def single_decompose(self, period):
         results = seasonal_decompose(
             x=self.data[self.config["variable"]],
-            model="multiplicative",
-            period=3141,
+            model="additive",
+            period=period,
         )
 
         plt.figure(figsize=(12, 10))
@@ -215,16 +223,16 @@ class ProcessStation():
         plt.plot(results.resid, label="Residual")
         plt.legend(loc="best")
         plt.savefig(
-            fname=self.config["test_path"],
+            fname=self.config["single_decomposition_plot_path"],
             format=self.config["plot_format"],
         )
         plt.close()
 
-    def multi_decomposition(self):
+    def multi_decompose(self, periods):
         stl_kwargs = {"seasonal_deg": 0}
         model = MSTL(
             self.data[self.config["variable"]],
-            periods=self.config["periods"],
+            periods=periods,
             stl_kwargs=stl_kwargs,
         )
         res = model.fit()
@@ -236,7 +244,10 @@ class ProcessStation():
         # set the size of the plot
         plt.rcParams["figure.figsize"] = [14, 10]
         res.plot()
-        plt.savefig(fname=self.config["decomposition_plot_path"], format=self.config['plot_format'])
+        plt.savefig(
+            fname=self.config["multi_decomposition_plot_path"],
+            format=self.config["plot_format"],
+        )
         plt.close()
 
 
@@ -253,6 +264,6 @@ if __name__ == "__main__":
     processor.plot_data()
     processor.check_monthly_trends()
     processor.check_yearly_trends()
-    processor.get_periods()
-    # processor.multi_decompose()
-    processor.single_decompose()
+    periods = processor.get_periods()
+    processor.multi_decompose(periods)
+    processor.single_decompose(periods[0])
