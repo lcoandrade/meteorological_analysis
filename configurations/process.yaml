@@ -1,10 +1,10 @@
 file_path: 'stations/inaquito.csv'
-variable: 'T2M_MAX'
+variables: ['T2M_MAX', 'T2M_MIN']
 plot_format: 'pdf'
 data_plot_path: 'plots/data.pdf'
 monthly_trends_plot_path: 'plots/monthly_trends.pdf'
 yearly_trends_plot_path: 'plots/yearly_trends.pdf'
-periods: [365]
+periods: [365, 730, 1460]
 multi_decomposition_plot_path: 'plots/multi_decomposition.pdf'
 furier_plot_path: 'plots/furier.pdf'
 single_decomposition_plot_path: 'plots/single_decomposition.pdf'

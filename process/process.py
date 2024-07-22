@@ -24,25 +24,35 @@ class ProcessStation():
         self.data["DAY"] = self.data.index.day
         self.data["MONTH"] = self.data.index.month
 
+        # Droping NA
         self.data = self.data.dropna()
+
+        # Setting variable to be used
+        variables = self.config["variables"]
+        if len(variables) > 1:
+            self.data["VARIABLE"] = self.data[variables].mean(axis=1)
+        else:
+            self.data["VARIABLE"] = self.data[variables[0]]
+
+        self.variable = "VARIABLE"
 
     def plot_data(self):
         plt.plot(
-            self.data[self.config["variable"]],
-            label=self.config["variable"],
+            self.data[self.variable],
+            label=self.variable,
             color="b",
             alpha=1,
             linewidth=1.0,
         )
         plt.xlabel("Year")
-        plt.ylabel("Mean Air Temperature (Cº)")
+        plt.ylabel(self.variable)
         plt.grid()
         plt.legend()
         plt.savefig(fname=self.config["data_plot_path"], format=self.config['plot_format'])
         plt.close()
 
     def fix_outliers(self):
-        indexes = self.data.index[self.data[self.config["variable"]] == 0]
+        indexes = self.data.index[self.data[self.variable] == 0]
 
         # Window size to calculate the mean
         window_size = 5
@@ -52,23 +62,23 @@ class ProcessStation():
             start_index = max(self.data.index.min(), index - pd.Timedelta(window_size, unit="days"))
             end_index = min(self.data.index.max(), index + pd.Timedelta(window_size, unit="days"))
 
-            data_window = self.data.T2M_MAX.loc[start_index:end_index]
+            data_window = self.data[self.variable].loc[start_index:end_index]
 
             smoothed_value = data_window[data_window != 0].mean()
 
             # Update the outlier with the mean value
-            self.data.loc[index, self.config["variable"]] = smoothed_value
+            self.data.loc[index, self.variable] = smoothed_value
 
     def check_monthly_trends(self):
-        variable = self.config["variable"]
-
         sns_blue = sns.color_palette(as_cmap=True)[0]
 
         # Define a figure and a set of subplots with 4 lines and 3 columns
         fig, axs = plt.subplots(4, 3, figsize=(15, 15))
 
         # Group the data by month and day, calculate the mean for each group and reorganize de data
-        monthly_mean = self.data.groupby(["MONTH", "DAY"])[variable].mean().unstack()
+        monthly_mean = (
+            self.data.groupby(["MONTH", "DAY"])[self.variable].mean().unstack()
+        )
 
         # Loop over the months (1 to 12)
         for i, month in enumerate(range(1, 13)):
@@ -82,8 +92,8 @@ class ProcessStation():
             # Plot the data in the correspondent subplot
             axs[row, col].plot(
                 data_for_month.DAY,
-                data_for_month[variable],
-                label=variable,
+                data_for_month[self.variable],
+                label=self.variable,
                 color=sns_blue,
                 alpha=0.1,
             )
@@ -96,7 +106,7 @@ class ProcessStation():
             # Plot the monthly mean in the correspondent subplot
             axs[row, col].plot(
                 monthly_data,
-                label=f"Mean {variable}",
+                label=f"Mean {self.variable}",
                 color="blue",
                 alpha=1,
             )
@@ -108,8 +118,6 @@ class ProcessStation():
         plt.close()
 
     def check_yearly_trends(self):
-        variable = self.config["variable"]
-
         sns_blue = sns.color_palette(as_cmap=True)[0]
 
         # Get the unique years from the data frame
@@ -129,7 +137,9 @@ class ProcessStation():
         axs = axs.flatten()
 
         # Group the data by month and day, calculate the mean for each group and reorganize de data
-        yearly_mean = self.data.groupby(["YEAR", "MONTH"])[variable].mean().unstack()
+        yearly_mean = (
+            self.data.groupby(["YEAR", "MONTH"])[self.variable].mean().unstack()
+        )
 
         # Loop over the year
         for i, year in enumerate(unique_years[: num_cols * num_rows]):
@@ -139,8 +149,8 @@ class ProcessStation():
             # Plot the data in the correspondent subplot
             axs[i].plot(
                 data_for_year.MONTH,
-                data_for_year[variable],
-                label=variable,
+                data_for_year[self.variable],
+                label=self.variable,
                 color=sns_blue,
                 alpha=0.1,
             )
@@ -153,7 +163,7 @@ class ProcessStation():
             # Plot the yearly mean in the correspondent subplot
             axs[i].plot(
                 yearly_data,
-                label=f"Mean {variable}",
+                label=f"Mean {self.variable}",
                 color="blue",
                 alpha=1,
             )
@@ -165,7 +175,7 @@ class ProcessStation():
         plt.close()
 
     def get_periods(self):
-        filtered_data = self.data[self.config["variable"]]
+        filtered_data = self.data[self.variable]
 
         # Calculate the fft of the data
         fourier = fftpack.fft(filtered_data.to_numpy())
@@ -183,10 +193,10 @@ class ProcessStation():
         print("Found periods:")
         ret = []
         for i, period in enumerate(top_periods):
-            print(f"Peak {i+1}: {period:.2f} unities of time")
             value = int(period)
-            if value not in ret:
+            if value not in ret and value < N // 2:
                 ret.append(value)
+                print(f"Peak {i+1}: {value} unities of time")
 
         # Plot the Furier spectrum for visualizations purposes
         plt.figure(figsize=(10, 6))
@@ -204,14 +214,14 @@ class ProcessStation():
 
     def single_decompose(self, period):
         results = seasonal_decompose(
-            x=self.data[self.config["variable"]],
+            x=self.data[self.variable],
             model="additive",
             period=period,
         )
 
         plt.figure(figsize=(12, 10))
         plt.subplot(411)
-        plt.plot(self.data[self.config["variable"]], label="Series")
+        plt.plot(self.data[self.variable], label="Series")
         plt.legend(loc="best")
         plt.subplot(412)
         plt.plot(results.trend, label="Trend")
@@ -229,10 +239,10 @@ class ProcessStation():
         plt.close()
 
     def multi_decompose(self, periods):
-        stl_kwargs = {"seasonal_deg": 0}
+        stl_kwargs = {"seasonal_deg": 2}
         model = MSTL(
-            self.data[self.config["variable"]],
-            periods=periods,
+            self.data[self.variable],
+            periods=self.config["periods"],
             stl_kwargs=stl_kwargs,
         )
         res = model.fit()
@@ -250,7 +260,6 @@ class ProcessStation():
         )
         plt.close()
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", type=argparse.FileType("r"), default='configurations/process.yaml')
@@ -266,4 +275,3 @@ if __name__ == "__main__":
     processor.check_yearly_trends()
     periods = processor.get_periods()
     processor.multi_decompose(periods)
-    processor.single_decompose(periods[0])
