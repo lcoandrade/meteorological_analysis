@@ -1,5 +1,6 @@
 file_path: 'stations/inaquito.csv'
 variables: ['T2M_MAX', 'T2M_MIN']
+variable_under_analysis: 'T2M_MEAN'
 plot_format: 'pdf'
 data_plot_path: 'plots/data.pdf'
 monthly_trends_plot_path: 'plots/monthly_trends.pdf'

@@ -30,11 +30,13 @@ class ProcessStation():
         # Setting variable to be used
         variables = self.config["variables"]
         if len(variables) > 1:
-            self.data["VARIABLE"] = self.data[variables].mean(axis=1)
+            self.data[self.config["variable_under_analysis"]] = self.data[
+                variables
+            ].mean(axis=1)
         else:
-            self.data["VARIABLE"] = self.data[variables[0]]
+            self.data[self.config["variable_under_analysis"]] = self.data[variables[0]]
 
-        self.variable = "VARIABLE"
+        self.variable = self.config["variable_under_analysis"]
 
     def plot_data(self):
         plt.plot(
