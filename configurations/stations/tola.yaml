@@ -1,0 +1,13 @@
+file_path: 'stations/tola.csv'
+decimal: ','
+separator: ';'
+variables: ['T2M']
+variable_under_analysis: 'T2M'
+plot_format: 'pdf'
+data_plot_path: 'plots/tola_data.pdf'
+monthly_trends_plot_path: 'plots/tola_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/tola_yearly_trends.pdf'
+periods: [365, 730, 1460]
+multi_decomposition_plot_path: 'plots/tola_multi_decomposition.pdf'
+furier_plot_path: 'plots/tola_furier.pdf'
+single_decomposition_plot_path: 'plots/tola_single_decomposition.pdf'

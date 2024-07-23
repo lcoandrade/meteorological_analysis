@@ -6,16 +6,52 @@ import yaml
 import argparse
 from scipy import fftpack
 import numpy as np
+import hydra
+from omegaconf import DictConfig, OmegaConf
+
+
+# Multi run using hydra
+@hydra.main(
+    version_base=None, config_path="../configurations", config_name="default_station"
+)
+def multi_run(cfg: DictConfig):
+    print(OmegaConf.to_yaml(cfg))
+    ppp_processor = ProcessStation(config=cfg)
+    ppp_processor.main()
+
+
+# Single run using yaml configuration
+def single_run():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=argparse.FileType("r"),
+        default="configurations/stations/inaquito.yaml",
+    )
+    parsed_args = parser.parse_args()
+
+    config = yaml.safe_load(parsed_args.config)
+
+    processor = ProcessStation(config)
+    processor.preprocess()
+    processor.fix_outliers()
+    processor.plot_data()
+    processor.check_monthly_trends()
+    processor.check_yearly_trends()
+    periods = processor.get_periods()
+    processor.multi_decompose()
+
 
 class ProcessStation():
     def __init__(self, config) -> None:
-        self.config = config
+        self.config = config["stations"]
 
         self.data = pd.read_csv(
-            filepath_or_buffer=config["file_path"],
+            filepath_or_buffer=self.config["file_path"],
             header=0,
-            sep=config["separator"],
-            decimal=config["decimal"],
+            sep=self.config["separator"],
+            decimal=self.config["decimal"],
         )
 
     def preprocess(self):
@@ -245,7 +281,7 @@ class ProcessStation():
         )
         plt.close()
 
-    def multi_decompose(self, periods):
+    def multi_decompose(self):
         stl_kwargs = {"seasonal_deg": 2}
         model = MSTL(
             self.data[self.variable],
@@ -267,18 +303,15 @@ class ProcessStation():
         )
         plt.close()
 
+    def main(self):
+        self.preprocess()
+        self.fix_outliers()
+        self.plot_data()
+        self.check_monthly_trends()
+        self.check_yearly_trends()
+        periods = self.get_periods()
+        self.multi_decompose()
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", type=argparse.FileType("r"), default='configurations/process.yaml')
-    parsed_args = parser.parse_args()
-
-    config = yaml.safe_load(parsed_args.config)
-
-    processor = ProcessStation(config)
-    processor.preprocess()
-    processor.fix_outliers()
-    processor.plot_data()
-    processor.check_monthly_trends()
-    processor.check_yearly_trends()
-    periods = processor.get_periods()
-    processor.multi_decompose(periods)
+    multi_run()

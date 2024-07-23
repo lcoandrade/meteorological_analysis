@@ -2,3 +2,6 @@
 
 #plots folder
 plots/*
+
+#hydra mulrun folder
+multirun/*

@@ -1,0 +1,3 @@
+defaults:
+  - stations: inaquito
+  - _self_
