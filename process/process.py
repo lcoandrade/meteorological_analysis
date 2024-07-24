@@ -61,16 +61,19 @@ class ProcessStation():
                 self.data["YEAR"] * 1000 + self.data["DOY"],
                 format=self.config["date_format"],
             )
+            # Setting date as index and calculating day and month for group by purposes
+            self.data = self.data.set_index("DATE")
+            self.data["DAY"] = self.data.index.day
+            self.data["MONTH"] = self.data.index.month
         else:
             self.data["DATE"] = pd.to_datetime(
                 self.data["DATE"], format=self.config["date_format"]
             )
-
-        # Setting date as index and calculating day and month for group by purposes
-        self.data = self.data.set_index('DATE')
-
-        self.data["DAY"] = self.data.index.day
-        self.data["MONTH"] = self.data.index.month
+            # Setting date as index and calculating day and month for group by purposes
+            self.data = self.data.set_index("DATE")
+            self.data["DAY"] = self.data.index.day
+            self.data["MONTH"] = self.data.index.month
+            self.data["YEAR"] = self.data.index.year
 
         # Droping NA
         self.data = self.data.dropna()
@@ -81,8 +84,6 @@ class ProcessStation():
             self.data[self.config["variable_under_analysis"]] = self.data[
                 variables
             ].mean(axis=1)
-        else:
-            self.data[self.config["variable_under_analysis"]] = self.data[variables[0]]
 
         self.variable = self.config["variable_under_analysis"]
 

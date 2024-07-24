@@ -1,0 +1,14 @@
+file_path: 'stations/estacion_desconocida2.csv'
+decimal: '.'
+separator: ';'
+date_format: '%Y%j' # Means we are using YEAR and DOY columns to create DATE in running time
+variables: ['T2M']
+variable_under_analysis: 'T2M'
+plot_format: 'pdf'
+data_plot_path: 'plots/estacion_desconocida2_data.pdf'
+monthly_trends_plot_path: 'plots/estacion_desconocida2_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/estacion_desconocida2_yearly_trends.pdf'
+periods: [365, 730, 1460]
+multi_decomposition_plot_path: 'plots/estacion_desconocida2_multi_decomposition.pdf'
+furier_plot_path: 'plots/estacion_desconocida2_furier.pdf'
+single_decomposition_plot_path: 'plots/estacion_desconocida2_single_decomposition.pdf'
