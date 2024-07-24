@@ -16,8 +16,8 @@ from omegaconf import DictConfig, OmegaConf
 )
 def multi_run(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
-    ppp_processor = ProcessStation(config=cfg)
-    ppp_processor.main()
+    processor = ProcessStation(config=cfg)
+    processor.main()
 
 
 # Single run using yaml configuration
@@ -55,11 +55,18 @@ class ProcessStation():
         )
 
     def preprocess(self):
-        # Calculating DATE from YEAR and DOY
-        self.data["DATE"] = pd.to_datetime(
-            self.data["YEAR"] * 1000 + self.data["DOY"], format="%Y%j"
-        )
+        if self.config["date_format"] == "%Y%j":
+            # Calculating DATE from YEAR and DOY
+            self.data["DATE"] = pd.to_datetime(
+                self.data["YEAR"] * 1000 + self.data["DOY"],
+                format=self.config["date_format"],
+            )
+        else:
+            self.data["DATE"] = pd.to_datetime(
+                self.data["DATE"], format=self.config["date_format"]
+            )
 
+        # Setting date as index and calculating day and month for group by purposes
         self.data = self.data.set_index('DATE')
 
         self.data["DAY"] = self.data.index.day

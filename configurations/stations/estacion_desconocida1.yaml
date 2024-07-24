@@ -1,7 +1,7 @@
-file_path: 'stations/tola.csv'
+file_path: 'stations/estacion_desconocida1.csv'
 decimal: ','
 separator: ';'
-date_format: '%Y%j' # Means we are using YEAR and DOY columns to create DATE in running time
+date_format: '%d/%m/%Y' # Means we are using the provided DATE column
 variables: ['T2M']
 variable_under_analysis: 'T2M'
 plot_format: 'pdf'

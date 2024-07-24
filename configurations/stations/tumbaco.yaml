@@ -1,6 +1,7 @@
 file_path: 'stations/tumbaco.csv'
 decimal: ','
 separator: ';'
+date_format: '%Y%j' # Means we are using YEAR and DOY columns to create DATE in running time
 variables: ['T2M_MAX', 'T2M_MIN']
 variable_under_analysis: 'T2M_MEAN'
 plot_format: 'pdf'
