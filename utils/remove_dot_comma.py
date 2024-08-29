@@ -1,7 +1,7 @@
 import re
 
-file = "../stations/estacion_desconocida1.csv"
-file2 = "../stations/estacion_desconocida11.csv"
+file = "stations/pomasqui.csv"
+file2 = "stations/pomasqui1.csv"
 
 with open(file, "r") as f:
     lines = f.readlines()

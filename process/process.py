@@ -16,7 +16,7 @@ from omegaconf import DictConfig, OmegaConf
 )
 def multi_run(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
-    processor = ProcessStation(config=cfg)
+    processor = ProcessStation(config=cfg, multi=True)
     processor.main()
 
 
@@ -27,13 +27,13 @@ def single_run():
         "-c",
         "--config",
         type=argparse.FileType("r"),
-        default="configurations/stations/inaquito.yaml",
+        default="configurations/stations/pomasqui.yaml",
     )
     parsed_args = parser.parse_args()
 
     config = yaml.safe_load(parsed_args.config)
 
-    processor = ProcessStation(config)
+    processor = ProcessStation(config, multi=False)
     processor.preprocess()
     processor.fix_outliers()
     processor.plot_data()
@@ -44,8 +44,12 @@ def single_run():
 
 
 class ProcessStation():
-    def __init__(self, config) -> None:
-        self.config = config["stations"]
+
+    def __init__(self, config, multi) -> None:
+        if multi:
+            self.config = config["stations"]
+        else:
+            self.config = config
 
         self.data = pd.read_csv(
             filepath_or_buffer=self.config["file_path"],
@@ -323,3 +327,4 @@ class ProcessStation():
 
 if __name__ == "__main__":
     multi_run()
+    # single_run()
