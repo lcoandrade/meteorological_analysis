@@ -1,0 +1,14 @@
+file_path: 'stations/el_carmen.csv'
+decimal: ','
+separator: ';'
+date_format: '%d/%m/%Y' # Means we are using the provided DATE column
+variables: ['T2M_MAX', 'T2M_MIN']
+variable_under_analysis: 'T2M_MEAN'
+plot_format: 'pdf'
+data_plot_path: 'plots/el_carmen_data.pdf'
+monthly_trends_plot_path: 'plots/el_carmen_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/el_carmen_yearly_trends.pdf'
+periods: [365, 730, 1460]
+multi_decomposition_plot_path: 'plots/el_carmen_multi_decomposition.pdf'
+furier_plot_path: 'plots/el_carmen_furier.pdf'
+single_decomposition_plot_path: 'plots/el_carmen_single_decomposition.pdf'
