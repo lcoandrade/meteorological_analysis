@@ -1,3 +1,4 @@
+station: 'puerto_ila'
 file_path: 'stations/puerto_ila.csv'
 decimal: ','
 separator: ';'
@@ -12,3 +13,4 @@ periods: [365, 730, 1460]
 multi_decomposition_plot_path: 'plots/puerto_ila_multi_decomposition.pdf'
 furier_plot_path: 'plots/puerto_ila_furier.pdf'
 single_decomposition_plot_path: 'plots/puerto_ila_single_decomposition.pdf'
+hurst_plot_path: 'plots/puerto_ila_hurst.pdf'

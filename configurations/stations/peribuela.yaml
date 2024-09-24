@@ -1,3 +1,4 @@
+station: 'peribuela'
 file_path: 'stations/peribuela.csv'
 decimal: '.'
 separator: ';'
@@ -12,3 +13,4 @@ periods: [365, 730, 1460]
 multi_decomposition_plot_path: 'plots/peribuela_multi_decomposition.pdf'
 furier_plot_path: 'plots/peribuela_furier.pdf'
 single_decomposition_plot_path: 'plots/peribuela_single_decomposition.pdf'
+hurst_plot_path: 'plots/peribuela_hurst.pdf'

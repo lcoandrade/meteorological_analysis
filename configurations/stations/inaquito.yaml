@@ -1,3 +1,4 @@
+station: 'inaquito'
 file_path: 'stations/inaquito.csv'
 decimal: '.'
 separator: ';'
@@ -12,3 +13,4 @@ periods: [365, 730, 1460]
 multi_decomposition_plot_path: 'plots/inaquito_multi_decomposition.pdf'
 furier_plot_path: 'plots/inaquito_furier.pdf'
 single_decomposition_plot_path: 'plots/inaquito_single_decomposition.pdf'
+hurst_plot_path: 'plots/inaquito_hurst.pdf'

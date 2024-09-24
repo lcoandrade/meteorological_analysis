@@ -1,3 +1,4 @@
+station: 'tola'
 file_path: 'stations/tola.csv'
 decimal: ','
 separator: ';'
@@ -12,3 +13,4 @@ periods: [365, 730, 1460]
 multi_decomposition_plot_path: 'plots/tola_multi_decomposition.pdf'
 furier_plot_path: 'plots/tola_furier.pdf'
 single_decomposition_plot_path: 'plots/tola_single_decomposition.pdf'
+hurst_plot_path: 'plots/tola_hurst.pdf'

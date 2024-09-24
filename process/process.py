@@ -8,6 +8,7 @@ from scipy import fftpack
 import numpy as np
 import hydra
 from omegaconf import DictConfig, OmegaConf
+from hurst import compute_Hc
 
 
 # Multi run using hydra
@@ -102,6 +103,7 @@ class ProcessStation():
         plt.xlabel("Year")
         plt.ylabel(self.variable)
         plt.grid()
+        plt.title(f"Station: {self.config['station']}")
         plt.legend()
         plt.savefig(fname=self.config["data_plot_path"], format=self.config['plot_format'])
         plt.close()
@@ -256,7 +258,7 @@ class ProcessStation():
         # Plot the Furier spectrum for visualizations purposes
         plt.figure(figsize=(10, 6))
         plt.plot(periods, np.abs(fourier))
-        plt.title("Fourier spectrum")
+        plt.title(f"Fourier spectrum (Station: {self.config['station']})")
         plt.xlabel("Period (time unity)")
         plt.ylabel("Amplitude")
         plt.grid(True)
@@ -302,9 +304,9 @@ class ProcessStation():
         )
         res = model.fit()
 
-        seasonal = res.seasonal  # contains all seasonal components
-        trend = res.trend # contains the trend
-        residual = res.resid # contains the residuals
+        # seasonal = res.seasonal  # contains all seasonal components
+        # trend = res.trend # contains the trend
+        # residual = res.resid # contains the residuals
 
         # set the size of the plot
         plt.rcParams["figure.figsize"] = [14, 10]
@@ -312,6 +314,24 @@ class ProcessStation():
         plt.savefig(
             fname=self.config["multi_decomposition_plot_path"],
             format=self.config["plot_format"],
+        )
+        plt.close()
+
+    def compute_Hurst(self):
+        H, c, val = compute_Hc(self.data[self.variable])
+
+        # Save the graph
+        axes = plt.subplots()[1]
+        axes.plot(val[0], c * val[0] ** H, color="blue")
+        axes.scatter(val[0], val[1], color="red")
+        axes.set_xscale("log")
+        axes.set_yscale("log")
+        axes.set_xlabel("Interval")
+        axes.set_ylabel("R/S ratio")
+        axes.grid(True)
+        plt.title(f"Station: {self.config['station']} (H={H:.4f}, c={c:.4f})")
+        plt.savefig(
+            fname=self.config["hurst_plot_path"], format=self.config["plot_format"]
         )
         plt.close()
 
@@ -323,6 +343,7 @@ class ProcessStation():
         self.check_yearly_trends()
         periods = self.get_periods()
         self.multi_decompose()
+        self.compute_Hurst()
 
 
 if __name__ == "__main__":

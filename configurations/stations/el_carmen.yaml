@@ -1,3 +1,4 @@
+station: 'el_carmen'
 file_path: 'stations/el_carmen.csv'
 decimal: ','
 separator: ';'
@@ -12,3 +13,4 @@ periods: [365, 730, 1460]
 multi_decomposition_plot_path: 'plots/el_carmen_multi_decomposition.pdf'
 furier_plot_path: 'plots/el_carmen_furier.pdf'
 single_decomposition_plot_path: 'plots/el_carmen_single_decomposition.pdf'
+hurst_plot_path: 'plots/el_carmen_hurst.pdf'
