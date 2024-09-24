@@ -1,4 +1,4 @@
-## deep_anomaly_gnss
+## meteorological_analysis
 meteorological_analysis provides a Python code that allows:
 1. Process meteorological data is CSV format in order to determine periods and trends
 2. It uses:
