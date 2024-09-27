@@ -4,6 +4,9 @@
 #plots folder
 plots/*
 
+# report file
+process/report.csv
+
 #hydra folders
 multirun/*
 outputs/*
