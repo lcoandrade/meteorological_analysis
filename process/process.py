@@ -320,24 +320,30 @@ class ProcessStation():
         plt.close()
 
     def compute_Hurst(self):
-        H, c, val = compute_Hc(self.data[self.variable])
+        hurst_dict = {}
 
-        # Save the graph
-        axes = plt.subplots()[1]
-        axes.plot(val[0], c * val[0] ** H, color="blue")
-        axes.scatter(val[0], val[1], color="red")
-        axes.set_xscale("log")
-        axes.set_yscale("log")
-        axes.set_xlabel("Interval")
-        axes.set_ylabel("R/S ratio")
-        axes.grid(True)
-        plt.title(f"Station: {self.config['station']} (H={H:.4f}, c={c:.4f})")
-        plt.savefig(
-            fname=self.config["hurst_plot_path"], format=self.config["plot_format"]
-        )
-        plt.close()
+        # Computing Hurst using hurst package
+        kinds = ["random_walk", "price", "change"]
+        for kind in kinds:
+            H, c, val = compute_Hc(
+                self.data[self.variable],
+                kind=kind,
+                simplified=True,
+            )
+            hurst_dict[kind] = H
 
-        return H
+        # Computing Hurst using nolds package
+        fits = ["poly", "RANSAC"]
+        for fit in fits:
+            H = nolds.hurst_rs(
+                self.data[self.variable],
+                unbiased=True,
+                corrected=True,
+                fit=fit,
+            )
+            hurst_dict[fit] = H
+
+        return hurst_dict
 
     def compute_Lyapunov(self):
         lyap_r = nolds.lyap_r(self.data[self.variable])
@@ -345,11 +351,15 @@ class ProcessStation():
 
         return lyap_r
 
-    def save_report(self, periods, H, lyap_r):
+    def save_report(self, periods, hurst_dict, lyap_r):
         report = {
             "Station": self.config["station"],
             "Periods": [periods],
-            "Hurst ": H,
+            "Hurst (kind=random_walk) ": hurst_dict["random_walk"],
+            "Hurst (kind=price) ": hurst_dict["price"],
+            "Hurst (kind=change) ": hurst_dict["change"],
+            "Hurst (fit=poly) ": hurst_dict["poly"],
+            "Hurst (fit=RANSAC) ": hurst_dict["RANSAC"],
             "Lyapunov (Rosenstein's)": lyap_r,
         }
 
@@ -373,10 +383,10 @@ class ProcessStation():
         self.check_yearly_trends()
         periods = self.get_periods()
         self.multi_decompose()
-        H = self.compute_Hurst()
+        hurst_dict = self.compute_Hurst()
         # lyap_r = self.compute_Lyapunov()
         lyap_r = 0
-        self.save_report(periods, H, lyap_r)
+        self.save_report(periods, hurst_dict, lyap_r)
 
 
 if __name__ == "__main__":
