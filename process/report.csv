@@ -1,0 +1,5 @@
+Station,Periods,Hurst ,Lyapunov (Rosenstein's)
+el_carmen,"[365, 182]",0.1937010240709014,0
+inaquito,"[365, 182]",0.1884238077232194,0
+peribuela,"[363, 181, 545]",0.2048526112030995,0
+pomasqui,"[182, 365]",0.18914176189386886,0

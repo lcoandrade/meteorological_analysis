@@ -9,6 +9,8 @@ import numpy as np
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from hurst import compute_Hc
+import nolds
+from pathlib import Path
 
 
 # Multi run using hydra
@@ -267,7 +269,7 @@ class ProcessStation():
         )
         plt.close()
 
-        return tuple(ret)
+        return ret
 
     def single_decompose(self, period):
         results = seasonal_decompose(
@@ -335,6 +337,34 @@ class ProcessStation():
         )
         plt.close()
 
+        return H
+
+    def compute_Lyapunov(self):
+        lyap_r = nolds.lyap_r(self.data[self.variable])
+        # lyap_e = nolds.lyap_e(self.data[self.variable])
+
+        return lyap_r
+
+    def save_report(self, periods, H, lyap_r):
+        report = {
+            "Station": self.config["station"],
+            "Periods": [periods],
+            "Hurst ": H,
+            "Lyapunov (Rosenstein's)": lyap_r,
+        }
+
+        # Saving the global report file
+        report_file = "process/report.csv"
+        new_df = pd.DataFrame.from_dict(
+            report,
+        )
+        if Path(report_file).is_file():
+            df = pd.read_csv(report_file)
+            df = df._append(new_df)
+        else:
+            df = new_df
+        df.to_csv(report_file, index=False)
+
     def main(self):
         self.preprocess()
         self.fix_outliers()
@@ -343,7 +373,10 @@ class ProcessStation():
         self.check_yearly_trends()
         periods = self.get_periods()
         self.multi_decompose()
-        self.compute_Hurst()
+        H = self.compute_Hurst()
+        # lyap_r = self.compute_Lyapunov()
+        lyap_r = 0
+        self.save_report(periods, H, lyap_r)
 
 
 if __name__ == "__main__":
