@@ -343,7 +343,41 @@ class ProcessStation():
             )
             hurst_dict[fit] = H
 
+        # Computing Hurst using Ernie Chan's algorithm
+        H = self.hurst_ernie_chan()
+        hurst_dict["ernie_chan"] = H
+
         return hurst_dict
+
+    def hurst_ernie_chan(self):
+        p = list(self.data[self.variable])
+
+        n_lags = int(np.sqrt(len(p)))
+        lags = np.arange(2, n_lags)
+
+        variancetau = []
+        tau = []
+
+        for lag in lags:
+
+            #  Write the different lags into a vector to compute a set of tau or lags
+            tau.append(lag)
+
+            # Compute the log returns on all days, then compute the variance on the difference in log returns
+            # call this pp or the price difference
+            pp = np.subtract(p[lag:], p[:-lag])
+            variancetau.append(np.var(pp))
+
+        # we now have a set of tau or lags and a corresponding set of variances.
+        # print tau
+        # print variancetau
+
+        # plot the log of those variance against the log of tau and get the slope
+        m = np.polyfit(np.log10(tau), np.log10(variancetau), 1)
+
+        hurst = m[0] / 2
+
+        return hurst
 
     def compute_Lyapunov(self):
         lyap_r = nolds.lyap_r(self.data[self.variable])
@@ -360,6 +394,7 @@ class ProcessStation():
             "Hurst (kind=change) ": hurst_dict["change"],
             "Hurst (fit=poly) ": hurst_dict["poly"],
             "Hurst (fit=RANSAC) ": hurst_dict["RANSAC"],
+            "Hurst (Ernie Chan) ": hurst_dict["ernie_chan"],
             "Lyapunov (Rosenstein's)": lyap_r,
         }
 
