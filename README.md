@@ -1,6 +1,6 @@
 ## meteorological_analysis
 meteorological_analysis provides a Python code that allows:
-1. Process meteorological data is CSV format in order to determine periods and trends
+1. Process meteorological data is CSV format in order to determine periods and analyze the presence of trends
 2. It uses:
    - FFT to determine periods
    - Hurst's Coefficient to quantify long-term memory of a time series to determine persistent/anti-persistent/random-walk behaviors
