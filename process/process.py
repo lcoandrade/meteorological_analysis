@@ -4,11 +4,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import yaml
 import argparse
-from scipy import fftpack
+from scipy import fft
 import numpy as np
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from hurst import compute_Hc
 import nolds
 from pathlib import Path
 
@@ -232,18 +231,12 @@ class ProcessStation():
 
         # Calculate the fft of the data
         # Return complex values
-        fourier = fftpack.fft(filtered_data.to_numpy())
+        fourier = fft.rfft(filtered_data.to_numpy())
 
         # Calculating the frequencies
         N = len(self.data)
-        freqs = fftpack.fftfreq(N)
-
-        # Nyquist frequency index
-        nyquist_idx = N // 2
-
-        # Focusing on the positive part of the spectrum
-        freqs = freqs[: nyquist_idx + 1]
-        fourier = fourier[: nyquist_idx + 1]
+        freqs = fft.rfftfreq(N)
+        periods = 1 / freqs
 
         # Getting the frequencies with higher magnitudes
         indices = np.argsort(np.abs(fourier))[::-1]
@@ -251,7 +244,6 @@ class ProcessStation():
         top_idx = indices[indices != 0][:5]
 
         # Calculating the top 5 periods
-        periods = 1 / freqs
         top_periods = np.abs(periods[top_idx])
 
         # Printing the periods
@@ -259,7 +251,7 @@ class ProcessStation():
         ret = []
         for i, period in enumerate(top_periods):
             value = int(period)
-            if value not in ret and value < N // 2:
+            if value not in ret and value != N:
                 ret.append(value)
                 print(f"Peak {i+1}: {value} unities of time")
 
