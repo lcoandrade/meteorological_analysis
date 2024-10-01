@@ -13,4 +13,6 @@ periods: [365, 730, 1460]
 multi_decomposition_plot_path: 'plots/pomasqui_multi_decomposition.pdf'
 furier_plot_path: 'plots/pomasqui_furier.pdf'
 single_decomposition_plot_path: 'plots/pomasqui_single_decomposition.pdf'
-hurst_plot_path: 'plots/pomasqui_hurst.pdf'
+hurst_rs_plot_path: 'plots/pomasqui_hurst_rs.pdf'
+hurst_dfa_plot_path: 'plots/pomasqui_hurst_dfa.pdf'
+hurst_ghe_plot_path: 'plots/pomasqui_hurst_ghe.pdf'

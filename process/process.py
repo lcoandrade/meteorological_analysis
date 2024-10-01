@@ -319,6 +319,21 @@ class ProcessStation():
         )
         plt.close()
 
+    def plot_hurst(self, x, y, method, xlabel, path):
+        # Plotting the data
+        plt.figure(figsize=(10, 6))
+        plt.plot(
+            x,
+            y,
+            label=f"Hurst {method}",
+        )
+        plt.title(f"Hurst {method} (Station: {self.config['station']})")
+        plt.xlabel(xlabel)
+        plt.ylabel("Hurst exponent")
+        plt.legend()
+        plt.savefig(fname=path, format=self.config["plot_format"])
+        plt.close()
+
     def compute_Hurst(self):
         hurst_dict = {}
 
@@ -335,6 +350,14 @@ class ProcessStation():
         ]
         hurst_dict["rs_max"] = max(hurst_rs)
         hurst_dict["rs_min"] = min(hurst_rs)
+        # Plotting the data
+        self.plot_hurst(
+            nstepss,
+            hurst_rs,
+            method="R/S",
+            xlabel="Subserie size",
+            path=self.config["hurst_rs_plot_path"],
+        )
 
         # Calculating Hurst using detrended fluctuation analysis (DFA) (dfa)
         factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
@@ -344,6 +367,14 @@ class ProcessStation():
         ]
         hurst_dict["dfa_max"] = max(hurst_dfa)
         hurst_dict["dfa_min"] = min(hurst_dfa)
+        # Plotting the data
+        self.plot_hurst(
+            factors,
+            hurst_dfa,
+            method="DFA",
+            xlabel="Factor",
+            path=self.config["hurst_dfa_plot_path"],
+        )
 
         # Calculating Hurst using Generalized Hurst Exponent (mfhurst_b)
         factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
@@ -355,60 +386,93 @@ class ProcessStation():
         ]
         hurst_dict["ghe_max"] = max(hurst_ghe)
         hurst_dict["ghe_min"] = min(hurst_ghe)
-
         # Plotting the data
-        plt.figure(figsize=(10, 6))
-        plt.plot(
-            nstepss,
-            hurst_rs,
-            color="b",
-            label="Hurst R/S",
-        )
-        plt.title(f"Hurst R/S (Station: {self.config['station']})")
-        plt.xlabel("Subserie size")
-        plt.ylabel("Hurst exponent")
-        plt.legend()
-        plt.savefig(
-            fname=self.config["hurst_rs_plot_path"], format=self.config["plot_format"]
-        )
-        plt.close()
-
-        plt.figure(figsize=(10, 6))
-        plt.plot(
-            factors,
-            hurst_dfa,
-            color="r",
-            label="Hurst DFA",
-        )
-        plt.title(f"Hurst DFA (Station: {self.config['station']})")
-        plt.xlabel("Factor")
-        plt.ylabel("Hurst exponent")
-        plt.legend()
-        plt.savefig(
-            fname=self.config["hurst_dfa_plot_path"], format=self.config["plot_format"]
-        )
-        plt.close()
-
-        plt.figure(figsize=(10, 6))
-        plt.plot(
+        self.plot_hurst(
             factors,
             hurst_ghe,
-            color="g",
-            label="Hurst GHE",
+            method="GHE",
+            xlabel="Factor",
+            path=self.config["hurst_ghe_plot_path"],
         )
-        plt.title(f"Hurst GHE (Station: {self.config['station']})")
-        plt.xlabel("Factor")
-        plt.ylabel("Hurst exponent")
-        plt.legend()
-        plt.savefig(
-            fname=self.config["hurst_ghe_plot_path"], format=self.config["plot_format"]
+
+        # Calculating Hurst using Ernest Chan's principles
+        n_lagss = np.arange(30, 1460, 30)
+        hurst_chan = [self.hurst_ernest_chan(n_lags) for n_lags in n_lagss]
+        hurst_dict["chan_max"] = max(hurst_chan)
+        hurst_dict["chan_min"] = min(hurst_chan)
+        # Plotting the data
+        self.plot_hurst(
+            n_lagss,
+            hurst_chan,
+            method="CHAN",
+            xlabel="N_lags",
+            path=self.config["hurst_chan_plot_path"],
         )
-        plt.close()
+
+        # hurst_dict["local"] = self.hurst()
 
         return hurst_dict
 
+    def hurst(self):
+        ts = list(self.data[self.variable])
+        N = len(ts)
+        if N < 20:
+            raise ValueError(
+                "Time series is too short! input series ought to have at least 20 samples!"
+            )
+
+        max_k = int(np.floor(N / 2))
+        R_S_dict = []
+        for k in range(10, max_k + 1):
+            R, S = 0, 0
+            # split ts into subsets
+            subset_list = [ts[i : i + k] for i in range(0, N, k)]
+            if np.mod(N, k) > 0:
+                subset_list.pop()
+                # tail = subset_list.pop()
+                # subset_list[-1].extend(tail)
+            # calc mean of every subset
+            mean_list = [np.mean(x) for x in subset_list]
+            for i in range(len(subset_list)):
+                cumsum_list = pd.Series(subset_list[i] - mean_list[i]).cumsum()
+                R += max(cumsum_list) - min(cumsum_list)
+                S += np.std(subset_list[i])
+            R_S_dict.append(
+                {"R": R / len(subset_list), "S": S / len(subset_list), "n": k}
+            )
+
+        log_R_S = []
+        log_n = []
+        for i in range(len(R_S_dict)):
+            R_S = (R_S_dict[i]["R"] + np.spacing(1)) / (
+                R_S_dict[i]["S"] + np.spacing(1)
+            )
+            log_R_S.append(np.log(R_S))
+            log_n.append(np.log(R_S_dict[i]["n"]))
+
+        Hurst_exponent = np.polyfit(log_n, log_R_S, 1)[0]
+        return Hurst_exponent
+
+    def hurst_ernest_chan(self, n_lags):
+        """Returns the Hurst Exponent of the time series vector ts"""
+        ts = list(self.data[self.variable])
+
+        # Create the range of lag values
+        lags = range(2, n_lags)
+
+        # Calculate the array of the variances of the lagged differences
+        # This means log(std) = 0.5*log(var)
+        # Therefore, the exponent of polyfit needs to be multiplied by 2 to give H
+        tau = [np.sqrt(np.std(np.subtract(ts[lag:], ts[:-lag]))) for lag in lags]
+
+        # Use a linear fit to estimate the Hurst Exponent
+        poly = np.polyfit(np.log(lags), np.log(tau), 1)
+
+        # Return the Hurst exponent from the polyfit output
+        return poly[0] * 2.0
+
     def compute_Lyapunov(self):
-        lyap_r = nolds.lyap_r(self.data[self.variable])
+        lyap_r = nolds.lyap_r(list(self.data[self.variable]), min_tsep=1)
         # lyap_e = nolds.lyap_e(self.data[self.variable])
 
         return lyap_r
@@ -423,6 +487,8 @@ class ProcessStation():
             "Hurst (DFA) min": hurst_dict["dfa_min"],
             "Hurst (GHE) max": hurst_dict["ghe_max"],
             "Hurst (GHE) min": hurst_dict["ghe_min"],
+            "Hurst (CHAN) max": hurst_dict["chan_max"],
+            "Hurst (CHAN) min": hurst_dict["chan_min"],
             "Lyapunov (Rosenstein's)": lyap_r,
         }
 
@@ -447,8 +513,8 @@ class ProcessStation():
         periods = self.get_periods()
         self.multi_decompose()
         hurst_dict = self.compute_Hurst()
-        # lyap_r = self.compute_Lyapunov()
-        lyap_r = 0
+        lyap_r = self.compute_Lyapunov()
+        # lyap_r = 0
         self.save_report(periods, hurst_dict, lyap_r)
 
 
