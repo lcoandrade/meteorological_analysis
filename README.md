@@ -14,11 +14,14 @@ meteorological_analysis provides a Python code that allows:
 [Hurst Exponent](https://en.wikipedia.org/wiki/Hurst_exponent)
 
 References from NOLDS:
+
     H. E. Hurst, “The problem of long-term storage in reservoirs,”
        International Association of Scientific Hydrology. Bulletin, vol. 1,
        no. 3, pp. 13–27, 1956.
+
     H. E. Hurst, “A suggested statistical model of some time series
        which occur in nature,” Nature, vol. 180, p. 494, 1957.
+
     R. Weron, “Estimating long-range dependence: finite sample
        properties and confidence intervals,” Physica A: Statistical Mechanics
        and its Applications, vol. 312, no. 1, pp. 285–299, 2002.
@@ -27,6 +30,7 @@ References from NOLDS:
 [Lyapunov coefficient](https://en.wikipedia.org/wiki/Lyapunov_exponent)
 
 References from NOLDS:
+
     M. T. Rosenstein, J. J. Collins, and C. J. De Luca,
        “A practical method for calculating largest Lyapunov exponents from
        small data sets,” Physica D: Nonlinear Phenomena, vol. 65, no. 1,
