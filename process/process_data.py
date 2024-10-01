@@ -119,18 +119,30 @@ class ProcessStation:
         filtered_data = self.data[self.variable]
 
         # Calculate the fft of the data
+        # Return complex values
         fourier = fftpack.fft(filtered_data.to_numpy())
 
+        # Calculating the frequencies
         N = len(self.data)
         freqs = fftpack.fftfreq(N)
-        periods = 1 / freqs
 
+        # Nyquist frequency index
+        nyquist_idx = N // 2
+
+        # Focusing on the positive part of the spectrum
+        freqs = freqs[: nyquist_idx + 1]
+        fourier = fourier[: nyquist_idx + 1]
+
+        # Getting the frequencies with higher magnitudes
         indices = np.argsort(np.abs(fourier))[::-1]
+        # Getting the top five frequency indexes
         top_idx = indices[indices != 0][:5]
 
+        # Calculating the top 5 periods
+        periods = 1 / freqs
         top_periods = np.abs(periods[top_idx])
 
-        # Imprimir os períodos encontrados
+        # Printing the periods
         print("Found periods:")
         ret = []
         for i, period in enumerate(top_periods):
@@ -316,14 +328,27 @@ class ProcessStation:
             df = new_df
         df.to_csv(report_file, index=False)
 
+    def run_mf(self):
+        data = self.data[self.variable]
+        data = np.asarray(data, dtype=np.float64)
+        n = len(data)
+        max_tsep_factor = 0.25
+        f = np.fft.rfft(data, n * 2 - 1)
+        mf = np.fft.rfftfreq(n * 2 - 1) * f**2
+        mf = np.sum(mf[1:]) / np.sum(f[1:] ** 2)
+
+        print("MF: ", mf)
+        print("MF Type:", type(mf))
+
     def main(self):
         self.preprocess()
         self.fix_outliers()
-        periods = self.get_periods()
-        hurst_dict = self.compute_Hurst()
-        lyap_r = self.compute_Lyapunov()
+        # periods = self.get_periods()
+        # hurst_dict = self.compute_Hurst()
+        # lyap_r = self.compute_Lyapunov()
         # lyap_r = 0
-        self.save_report(periods, hurst_dict, lyap_r)
+        # self.save_report(periods, hurst_dict, lyap_r)
+        self.run_mf()
 
 
 if __name__ == "__main__":

@@ -231,18 +231,30 @@ class ProcessStation():
         filtered_data = self.data[self.variable]
 
         # Calculate the fft of the data
+        # Return complex values
         fourier = fftpack.fft(filtered_data.to_numpy())
 
+        # Calculating the frequencies
         N = len(self.data)
         freqs = fftpack.fftfreq(N)
-        periods = 1 / freqs
 
+        # Nyquist frequency index
+        nyquist_idx = N // 2
+
+        # Focusing on the positive part of the spectrum
+        freqs = freqs[: nyquist_idx + 1]
+        fourier = fourier[: nyquist_idx + 1]
+
+        # Getting the frequencies with higher magnitudes
         indices = np.argsort(np.abs(fourier))[::-1]
+        # Getting the top five frequency indexes
         top_idx = indices[indices != 0][:5]
 
+        # Calculating the top 5 periods
+        periods = 1 / freqs
         top_periods = np.abs(periods[top_idx])
 
-        # Imprimir os períodos encontrados
+        # Printing the periods
         print("Found periods:")
         ret = []
         for i, period in enumerate(top_periods):
