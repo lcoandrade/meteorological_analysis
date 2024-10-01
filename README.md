@@ -8,10 +8,10 @@ meteorological_analysis provides a Python code that allows:
    - MSTL to decompose the time series in trend, seasonality and residual, considering a persistence and stable behavior 
 
 ## Fourier Transforms
-[Fourier Transforms]{https://docs.scipy.org/doc/scipy/tutorial/fft.html#d-discrete-fourier-transforms}
+[Fourier Transforms](https://docs.scipy.org/doc/scipy/tutorial/fft.html#d-discrete-fourier-transforms)
 
 ## Hurst coefficient
-[Hurst Exponent]{https://en.wikipedia.org/wiki/Hurst_exponent}
+[Hurst Exponent](https://en.wikipedia.org/wiki/Hurst_exponent)
 References from NOLDS:
     H. E. Hurst, “The problem of long-term storage in reservoirs,”
        International Association of Scientific Hydrology. Bulletin, vol. 1,
@@ -23,7 +23,7 @@ References from NOLDS:
        and its Applications, vol. 312, no. 1, pp. 285–299, 2002.
 
 ## Lyapunov coefficient
-[Lyapunov coefficient]{https://en.wikipedia.org/wiki/Lyapunov_exponent}
+[Lyapunov coefficient](https://en.wikipedia.org/wiki/Lyapunov_exponent)
 References from NOLDS:
     M. T. Rosenstein, J. J. Collins, and C. J. De Luca,
        “A practical method for calculating largest Lyapunov exponents from
