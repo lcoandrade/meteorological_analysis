@@ -38,7 +38,7 @@ References from NOLDS:
 
 ## PIP Requirements
 1. hydra: to run multiple configuration files
-2. nolds: to compute Lyapunov's exponent
+2. nolds: to compute Lyapunov's and Hurst's exponents
 3. statsmodels: to decompose series with MSTL
 4. Basic dependencies: Matplotlib, Scikit-learn, Numpy, Pandas 
 
