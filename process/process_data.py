@@ -6,21 +6,8 @@ import yaml
 import argparse
 from scipy import fftpack
 import numpy as np
-import hydra
-from omegaconf import DictConfig, OmegaConf
-from hurst import compute_Hc
 import nolds
 from pathlib import Path
-
-
-# Multi run using hydra
-@hydra.main(
-    version_base=None, config_path="../configurations", config_name="default_station"
-)
-def multi_run(cfg: DictConfig):
-    print(OmegaConf.to_yaml(cfg))
-    processor = ProcessStation(config=cfg, multi=True)
-    processor.main()
 
 
 # Single run using yaml configuration
@@ -40,7 +27,7 @@ def single_run():
     processor.main()
 
 
-class ProcessStation():
+class ProcessStation:
 
     def __init__(self, config, multi) -> None:
         if multi:
@@ -101,7 +88,9 @@ class ProcessStation():
         plt.grid()
         plt.title(f"Station: {self.config['station']}")
         plt.legend()
-        plt.savefig(fname=self.config["data_plot_path"], format=self.config['plot_format'])
+        plt.savefig(
+            fname=self.config["data_plot_path"], format=self.config["plot_format"]
+        )
         plt.close()
 
     def fix_outliers(self):
@@ -112,8 +101,12 @@ class ProcessStation():
 
         for index in indexes:
             # Calculate the mean with the sliding window
-            start_index = max(self.data.index.min(), index - pd.Timedelta(window_size, unit="days"))
-            end_index = min(self.data.index.max(), index + pd.Timedelta(window_size, unit="days"))
+            start_index = max(
+                self.data.index.min(), index - pd.Timedelta(window_size, unit="days")
+            )
+            end_index = min(
+                self.data.index.max(), index + pd.Timedelta(window_size, unit="days")
+            )
 
             data_window = self.data[self.variable].loc[start_index:end_index]
 
@@ -121,111 +114,6 @@ class ProcessStation():
 
             # Update the outlier with the mean value
             self.data.loc[index, self.variable] = smoothed_value
-
-    def check_monthly_trends(self):
-        sns_blue = sns.color_palette(as_cmap=True)[0]
-
-        # Define a figure and a set of subplots with 4 lines and 3 columns
-        fig, axs = plt.subplots(4, 3, figsize=(15, 15))
-
-        # Group the data by month and day, calculate the mean for each group and reorganize de data
-        monthly_mean = (
-            self.data.groupby(["MONTH", "DAY"])[self.variable].mean().unstack()
-        )
-
-        # Loop over the months (1 to 12)
-        for i, month in enumerate(range(1, 13)):
-            # Calculate the coordinates of the current subplot
-            row = i // 3
-            col = i % 3
-
-            # Filtering the data for the current month
-            data_for_month = self.data[self.data.MONTH == month]
-
-            # Plot the data in the correspondent subplot
-            axs[row, col].plot(
-                data_for_month.DAY,
-                data_for_month[self.variable],
-                label=self.variable,
-                color=sns_blue,
-                alpha=0.1,
-            )
-            axs[row, col].set_title(f"Month {str(month)}")
-            axs[row, col].legend()
-
-            # Select the monthly mean for the current month
-            monthly_data = monthly_mean.loc[month]
-
-            # Plot the monthly mean in the correspondent subplot
-            axs[row, col].plot(
-                monthly_data,
-                label=f"Mean {self.variable}",
-                color="blue",
-                alpha=1,
-            )
-            axs[row, col].legend()
-
-        # Set layout and labels
-        plt.tight_layout()
-        plt.savefig(fname=self.config["monthly_trends_plot_path"], format=self.config['plot_format'])
-        plt.close()
-
-    def check_yearly_trends(self):
-        sns_blue = sns.color_palette(as_cmap=True)[0]
-
-        # Get the unique years from the data frame
-        unique_years = self.data["YEAR"].unique()
-
-        # Define the subplots number
-        num_subplots = len(unique_years)
-
-        # Calculate rows and cols to plot
-        num_cols = 3
-        num_rows = num_subplots // num_cols
-
-        # Create figure and subplots
-        fig, axs = plt.subplots(num_rows, num_cols, figsize=(15, 30))
-
-        # Flatten the subplots matrix to simplify the loop
-        axs = axs.flatten()
-
-        # Group the data by month and day, calculate the mean for each group and reorganize de data
-        yearly_mean = (
-            self.data.groupby(["YEAR", "MONTH"])[self.variable].mean().unstack()
-        )
-
-        # Loop over the year
-        for i, year in enumerate(unique_years[: num_cols * num_rows]):
-            # Filtering the data for the current month
-            data_for_year = self.data[self.data.YEAR == year]
-
-            # Plot the data in the correspondent subplot
-            axs[i].plot(
-                data_for_year.MONTH,
-                data_for_year[self.variable],
-                label=self.variable,
-                color=sns_blue,
-                alpha=0.1,
-            )
-            axs[i].set_title(f"Year {str(year)}")
-            axs[i].legend()
-
-            # Select the yearly mean for the current month
-            yearly_data = yearly_mean.loc[year]
-
-            # Plot the yearly mean in the correspondent subplot
-            axs[i].plot(
-                yearly_data,
-                label=f"Mean {self.variable}",
-                color="blue",
-                alpha=1,
-            )
-            axs[i].legend()
-
-        # Set layout and labels
-        plt.tight_layout()
-        plt.savefig(fname=self.config["yearly_trends_plot_path"], format=self.config['plot_format'])
-        plt.close()
 
     def get_periods(self):
         filtered_data = self.data[self.variable]
@@ -265,54 +153,6 @@ class ProcessStation():
 
         return ret
 
-    def single_decompose(self, period):
-        results = seasonal_decompose(
-            x=self.data[self.variable],
-            model="additive",
-            period=period,
-        )
-
-        plt.figure(figsize=(12, 10))
-        plt.subplot(411)
-        plt.plot(self.data[self.variable], label="Series")
-        plt.legend(loc="best")
-        plt.subplot(412)
-        plt.plot(results.trend, label="Trend")
-        plt.legend(loc="best")
-        plt.subplot(413)
-        plt.plot(results.seasonal, label="Seasonal")
-        plt.legend(loc="best")
-        plt.subplot(414)
-        plt.plot(results.resid, label="Residual")
-        plt.legend(loc="best")
-        plt.savefig(
-            fname=self.config["single_decomposition_plot_path"],
-            format=self.config["plot_format"],
-        )
-        plt.close()
-
-    def multi_decompose(self):
-        stl_kwargs = {"seasonal_deg": 2}
-        model = MSTL(
-            self.data[self.variable],
-            periods=self.config["periods"],
-            stl_kwargs=stl_kwargs,
-        )
-        res = model.fit()
-
-        # seasonal = res.seasonal  # contains all seasonal components
-        # trend = res.trend # contains the trend
-        # residual = res.resid # contains the residuals
-
-        # set the size of the plot
-        plt.rcParams["figure.figsize"] = [14, 10]
-        res.plot()
-        plt.savefig(
-            fname=self.config["multi_decomposition_plot_path"],
-            format=self.config["plot_format"],
-        )
-        plt.close()
-
     def plot_hurst(self, x, y, method, xlabel, path):
         # Plotting the data
         plt.figure(figsize=(10, 6))
@@ -340,8 +180,14 @@ class ProcessStation():
             nolds.logmid_n(total, ratio=1 / 4.0, nsteps=nsteps) for nsteps in nstepss
         ]
         hurst_rs = [
-            nolds.hurst_rs(self.data[self.variable], nvals=nvals, fit="poly")
-            for nvals in nvalss
+            nolds.hurst_rs(
+                self.data[self.variable],
+                nvals=nvals,
+                fit="poly",
+                debug_plot=True,
+                plot_file=f"plots/{self.config['station']}_hurst_rs_{i}.pdf",
+            )
+            for i, nvals in enumerate(nvalss)
         ]
         hurst_dict["rs_max"] = max(hurst_rs)
         hurst_dict["rs_min"] = min(hurst_rs)
@@ -358,8 +204,14 @@ class ProcessStation():
         factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
         nvalss = [nolds.logarithmic_n(4, 0.1 * total, factor) for factor in factors]
         hurst_dfa = [
-            nolds.dfa(self.data[self.variable], nvals=nvals, fit_exp="poly")
-            for nvals in nvalss
+            nolds.dfa(
+                self.data[self.variable],
+                nvals=nvals,
+                fit_exp="poly",
+                debug_plot=True,
+                plot_file=f"plots/{self.config['station']}_hurst_dfa_{i}.pdf",
+            )
+            for i, nvals in enumerate(nvalss)
         ]
         hurst_dict["dfa_max"] = max(hurst_dfa)
         hurst_dict["dfa_min"] = min(hurst_dfa)
@@ -378,7 +230,13 @@ class ProcessStation():
             nolds.logarithmic_n(1, max(20, 0.02 * total), factor) for factor in factors
         ]
         hurst_ghe = [
-            nolds.mfhurst_b(self.data[self.variable], dists=dists) for dists in distss
+            nolds.mfhurst_b(
+                self.data[self.variable],
+                dists=dists,
+                debug_plot=True,
+                plot_file=f"plots/{self.config['station']}_hurst_ghe_{i}.pdf",
+            )
+            for i, dists in enumerate(distss)
         ]
         hurst_dict["ghe_max"] = max(hurst_ghe)
         hurst_dict["ghe_min"] = min(hurst_ghe)
@@ -461,11 +319,7 @@ class ProcessStation():
     def main(self):
         self.preprocess()
         self.fix_outliers()
-        self.plot_data()
-        self.check_monthly_trends()
-        self.check_yearly_trends()
         periods = self.get_periods()
-        self.multi_decompose()
         hurst_dict = self.compute_Hurst()
         lyap_r = self.compute_Lyapunov()
         # lyap_r = 0
@@ -473,5 +327,5 @@ class ProcessStation():
 
 
 if __name__ == "__main__":
-    multi_run()
-    # single_run()
+    # multi_run()
+    single_run()
