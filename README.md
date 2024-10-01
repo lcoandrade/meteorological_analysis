@@ -12,6 +12,7 @@ meteorological_analysis provides a Python code that allows:
 
 ## Hurst coefficient
 [Hurst Exponent](https://en.wikipedia.org/wiki/Hurst_exponent)
+
 References from NOLDS:
     H. E. Hurst, “The problem of long-term storage in reservoirs,”
        International Association of Scientific Hydrology. Bulletin, vol. 1,
@@ -24,6 +25,7 @@ References from NOLDS:
 
 ## Lyapunov coefficient
 [Lyapunov coefficient](https://en.wikipedia.org/wiki/Lyapunov_exponent)
+
 References from NOLDS:
     M. T. Rosenstein, J. J. Collins, and C. J. De Luca,
        “A practical method for calculating largest Lyapunov exponents from
