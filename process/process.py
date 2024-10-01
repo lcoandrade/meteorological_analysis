@@ -437,10 +437,23 @@ class ProcessStation():
         # Return the Hurst exponent from the polyfit output
         return poly[0] * 2.0
 
-    def compute_Lyapunov(self):
-        lyap_r = nolds.lyap_r(list(self.data[self.variable]), min_tsep=1)
-        # lyap_e = nolds.lyap_e(self.data[self.variable])
+    def get_mean_period(self):
+        # Used to get the mean data frequency
+        data = self.data[self.variable]
+        data = np.asarray(data, dtype=np.float64)
+        n = len(data)
+        max_tsep_factor = 0.25
+        f = np.fft.rfft(data, n * 2 - 1)
+        mf = np.fft.rfftfreq(n * 2 - 1) * f**2
+        mf = np.sum(mf[1:]) / np.sum(f[1:] ** 2)
 
+        min_tsep = np.ceil(1 / mf.real)
+        min_tsep = min(min_tsep, int(max_tsep_factor * n))
+        return min_tsep
+
+    def compute_Lyapunov(self):
+        min_tsep = self.get_mean_period()
+        lyap_r = nolds.lyap_r(list(self.data[self.variable]), min_tsep=min_tsep)
         return lyap_r
 
     def save_report(self, periods, hurst_dict, lyap_r):

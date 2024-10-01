@@ -337,8 +337,13 @@ class ProcessStation:
         mf = np.fft.rfftfreq(n * 2 - 1) * f**2
         mf = np.sum(mf[1:]) / np.sum(f[1:] ** 2)
 
+        mtsep = np.ceil(1 / mf.real)
+        mtsep = min(mtsep, int(0.25 * n))
+
         print("MF: ", mf)
         print("MF Type:", type(mf))
+        print("MTSEP:", mtsep)
+        print("25 percent of N:", int(0.25 * n))
 
     def main(self):
         self.preprocess()
