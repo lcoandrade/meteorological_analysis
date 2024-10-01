@@ -5,7 +5,7 @@ meteorological_analysis provides a Python code that allows:
    - FFT to determine periods
    - Hurst's Coefficient to quantify long-term memory of a time series to determine persistent/anti-persistent/random-walk behaviors
    - Lyapunov's exponent to measure the sensitivity of a time series to its initial conditions to determine chaotic/stable behaviors
-   - MSTL to decompose the time series in trend, seasonality and residual, considering a persistence and stable behavior 
+   - MSTL to decompose the time series in trend, seasonality and residual
 
 ## Fourier Transforms
 [Fourier Transforms](https://docs.scipy.org/doc/scipy/tutorial/fft.html#d-discrete-fourier-transforms)
