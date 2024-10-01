@@ -251,6 +251,7 @@ class ProcessStation():
         ret = []
         for i, period in enumerate(top_periods):
             value = int(period)
+            # Not keeping the Nyquist frequency
             if value not in ret and value != N:
                 ret.append(value)
                 print(f"Peak {i+1}: {value} unities of time")
