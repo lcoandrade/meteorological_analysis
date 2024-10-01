@@ -322,62 +322,90 @@ class ProcessStation():
     def compute_Hurst(self):
         hurst_dict = {}
 
-        # Computing Hurst using hurst package
-        kinds = ["random_walk", "price", "change"]
-        for kind in kinds:
-            H, c, val = compute_Hc(
-                self.data[self.variable],
-                kind=kind,
-                simplified=True,
-            )
-            hurst_dict[kind] = H
-
         # Computing Hurst using nolds package
-        fits = ["poly", "RANSAC"]
-        for fit in fits:
-            H = nolds.hurst_rs(
-                self.data[self.variable],
-                unbiased=True,
-                corrected=True,
-                fit=fit,
-            )
-            hurst_dict[fit] = H
+        total = len(self.data[self.variable])
 
-        # Computing Hurst using Ernie Chan's algorithm
-        H = self.hurst_ernie_chan()
-        hurst_dict["ernie_chan"] = H
+        # Calculating Hurst using Hurst exponent (hurst_rs)
+        nstepss = np.arange(15, 31)
+        nvalss = [
+            nolds.logmid_n(total, ratio=1 / 4.0, nsteps=nsteps) for nsteps in nstepss
+        ]
+        hurst_rs = [
+            nolds.hurst_rs(self.data[self.variable], nvals=nvals) for nvals in nvalss
+        ]
+        hurst_dict["rs_max"] = max(hurst_rs)
+        hurst_dict["rs_min"] = min(hurst_rs)
+
+        # Calculating Hurst using detrended fluctuation analysis (DFA) (dfa)
+        factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
+        nvalss = [nolds.logarithmic_n(4, 0.1 * total, factor) for factor in factors]
+        hurst_dfa = [
+            nolds.dfa(self.data[self.variable], nvals=nvals) for nvals in nvalss
+        ]
+        hurst_dict["dfa_max"] = max(hurst_dfa)
+        hurst_dict["dfa_min"] = min(hurst_dfa)
+
+        # Calculating Hurst using Generalized Hurst Exponent (mfhurst_b)
+        factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
+        distss = [
+            nolds.logarithmic_n(1, max(20, 0.02 * total), factor) for factor in factors
+        ]
+        hurst_ghe = [
+            nolds.mfhurst_b(self.data[self.variable], dists=dists) for dists in distss
+        ]
+        hurst_dict["ghe_max"] = max(hurst_ghe)
+        hurst_dict["ghe_min"] = min(hurst_ghe)
+
+        # Plotting the data
+        plt.figure(figsize=(10, 6))
+        plt.plot(
+            nstepss,
+            hurst_rs,
+            color="b",
+            label="Hurst R/S",
+        )
+        plt.title(f"Hurst R/S (Station: {self.config['station']})")
+        plt.xlabel("Subserie size")
+        plt.ylabel("Hurst exponent")
+        plt.legend()
+        plt.savefig(
+            fname=self.config["hurst_rs_plot_path"], format=self.config["plot_format"]
+        )
+        plt.close()
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(
+            factors,
+            hurst_dfa,
+            color="r",
+            label="Hurst DFA",
+        )
+        plt.title(f"Hurst DFA (Station: {self.config['station']})")
+        plt.xlabel("Factor")
+        plt.ylabel("Hurst exponent")
+        plt.legend()
+        plt.savefig(
+            fname=self.config["hurst_dfa_plot_path"], format=self.config["plot_format"]
+        )
+        plt.close()
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(
+            factors,
+            hurst_ghe,
+            color="g",
+            label="Hurst GHE",
+        )
+        plt.title(f"Hurst GHE (Station: {self.config['station']})")
+        plt.xlabel("Factor")
+        plt.ylabel("Hurst exponent")
+        plt.legend()
+        plt.savefig(
+            fname=self.config["hurst_ghe_plot_path"], format=self.config["plot_format"]
+        )
+        plt.close()
 
         return hurst_dict
-
-    def hurst_ernie_chan(self):
-        p = list(self.data[self.variable])
-
-        n_lags = int(np.sqrt(len(p)))
-        lags = np.arange(2, n_lags)
-
-        variancetau = []
-        tau = []
-
-        for lag in lags:
-
-            #  Write the different lags into a vector to compute a set of tau or lags
-            tau.append(lag)
-
-            # Compute the log returns on all days, then compute the variance on the difference in log returns
-            # call this pp or the price difference
-            pp = np.subtract(p[lag:], p[:-lag])
-            variancetau.append(np.var(pp))
-
-        # we now have a set of tau or lags and a corresponding set of variances.
-        # print tau
-        # print variancetau
-
-        # plot the log of those variance against the log of tau and get the slope
-        m = np.polyfit(np.log10(tau), np.log10(variancetau), 1)
-
-        hurst = m[0] / 2
-
-        return hurst
 
     def compute_Lyapunov(self):
         lyap_r = nolds.lyap_r(self.data[self.variable])
@@ -389,12 +417,12 @@ class ProcessStation():
         report = {
             "Station": self.config["station"],
             "Periods": [periods],
-            "Hurst (kind=random_walk) ": hurst_dict["random_walk"],
-            "Hurst (kind=price) ": hurst_dict["price"],
-            "Hurst (kind=change) ": hurst_dict["change"],
-            "Hurst (fit=poly) ": hurst_dict["poly"],
-            "Hurst (fit=RANSAC) ": hurst_dict["RANSAC"],
-            "Hurst (Ernie Chan) ": hurst_dict["ernie_chan"],
+            "Hurst (R/S) max": hurst_dict["rs_max"],
+            "Hurst (R/S) min": hurst_dict["rs_min"],
+            "Hurst (DFA) max": hurst_dict["dfa_max"],
+            "Hurst (DFA) min": hurst_dict["dfa_min"],
+            "Hurst (GHE) max": hurst_dict["ghe_max"],
+            "Hurst (GHE) min": hurst_dict["ghe_min"],
             "Lyapunov (Rosenstein's)": lyap_r,
         }
 
