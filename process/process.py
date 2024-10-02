@@ -104,7 +104,7 @@ class ProcessStation():
         plt.close()
 
     def fix_outliers(self):
-        indexes = self.data.index[self.data[self.variable] == 0]
+        indexes = self.data.index[self.data[self.variable] == -999.0]
 
         # Window size to calculate the mean
         window_size = 5
@@ -334,6 +334,11 @@ class ProcessStation():
         plt.close()
 
     def compute_Hurst(self):
+        data = self.data[self.variable]
+        print("Data: ", data.head())
+        data = data - data.mean()
+        print("Data - mean: ", data.head())
+
         hurst_dict = {}
 
         # Computing Hurst using nolds package
@@ -344,10 +349,7 @@ class ProcessStation():
         nvalss = [
             nolds.logmid_n(total, ratio=1 / 4.0, nsteps=nsteps) for nsteps in nstepss
         ]
-        hurst_rs = [
-            nolds.hurst_rs(self.data[self.variable], nvals=nvals, fit="poly")
-            for nvals in nvalss
-        ]
+        hurst_rs = [nolds.hurst_rs(data, nvals=nvals, fit="poly") for nvals in nvalss]
         hurst_dict["rs_max"] = max(hurst_rs)
         hurst_dict["rs_min"] = min(hurst_rs)
         # Plotting the data
@@ -362,10 +364,7 @@ class ProcessStation():
         # Calculating Hurst using detrended fluctuation analysis (DFA) (dfa)
         factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
         nvalss = [nolds.logarithmic_n(4, 0.1 * total, factor) for factor in factors]
-        hurst_dfa = [
-            nolds.dfa(self.data[self.variable], nvals=nvals, fit_exp="poly")
-            for nvals in nvalss
-        ]
+        hurst_dfa = [nolds.dfa(data, nvals=nvals, fit_exp="poly") for nvals in nvalss]
         hurst_dict["dfa_max"] = max(hurst_dfa)
         hurst_dict["dfa_min"] = min(hurst_dfa)
         # Plotting the data
@@ -382,9 +381,7 @@ class ProcessStation():
         distss = [
             nolds.logarithmic_n(1, max(20, 0.02 * total), factor) for factor in factors
         ]
-        hurst_ghe = [
-            nolds.mfhurst_b(self.data[self.variable], dists=dists) for dists in distss
-        ]
+        hurst_ghe = [nolds.mfhurst_b(data, dists=dists) for dists in distss]
         hurst_dict["ghe_max"] = max(hurst_ghe)
         hurst_dict["ghe_min"] = min(hurst_ghe)
         # Plotting the data
@@ -414,7 +411,10 @@ class ProcessStation():
 
     def hurst_ernest_chan(self, n_lags):
         """Returns the Hurst Exponent of the time series vector ts"""
-        ts = list(self.data[self.variable])
+        data = self.data[self.variable]
+        data = data - data.mean()
+
+        ts = list(data)
 
         # Create the range of lag values
         lags = range(2, n_lags)
@@ -442,7 +442,7 @@ class ProcessStation():
 
         min_tsep = np.ceil(1 / mf.real)
         min_tsep = min(min_tsep, int(max_tsep_factor * n))
-        return min_tsep
+        return int(min_tsep)
 
     def compute_Lyapunov(self):
         min_tsep = self.get_mean_period()
