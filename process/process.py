@@ -390,14 +390,16 @@ class ProcessStation:
         ltm_dict = {}
 
         # Computing LTM using nolds package
-        total = len(self.data[self.variable])
+        total = len(data)
 
         # Calculating LTM using Hurst exponent (hurst_rs)
         # Calculating a series of nvals of powers of 2
         # max_power is the maximum k such as 2ˆk <= total/2 (i.e. we want the maximum k that divides the series in 2 parts)
         max_power = int(np.log2(total / 2))
+        # values of k used to compute 2ˆk
         powers = np.arange(4, max_power + 1)
-        nvalss = [2 ** np.arange(1, power + 1) for power in powers]
+        # Divisors (i.e. list of 2ˆk) used to divide the series
+        divisorss = [2 ** np.arange(1, power + 1) for power in powers]
 
         """
         # Original method to calculate nvals. It's not being used anymore because it was returning H > 1 in all cases.
@@ -406,7 +408,9 @@ class ProcessStation:
             nolds.logmid_n(total, ratio=1 / 4.0, nsteps=nsteps) for nsteps in nstepss
         ]
         """
-        hurst_rs = [nolds.hurst_rs(data, nvals=nvals, fit="poly") for nvals in nvalss]
+        hurst_rs = [
+            nolds.hurst_rs(data, nvals=divisors, fit="poly") for divisors in divisorss
+        ]
         ltm_dict["rs_max"] = max(hurst_rs)
         ltm_dict["rs_min"] = min(hurst_rs)
         # Plotting the data
@@ -420,14 +424,24 @@ class ProcessStation:
         )
 
         # Calculating LTM using detrended fluctuation analysis (DFA) (dfa)
+        """
+        # Original method to calculate nvals. It's not being used anymore to make it compatible with Hurst R/S
         factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
         nvalss = [nolds.logarithmic_n(4, 0.1 * total, factor) for factor in factors]
-        alpha_dfa = [nolds.dfa(data, nvals=nvals, fit_exp="poly") for nvals in nvalss]
+        """
+
+        # Subseries sizes (i.e. list of total//2ˆk) used to split the series
+        subserie_sizess = [total // 2 ** np.arange(1, power + 1) for power in powers]
+        alpha_dfa = [
+            nolds.dfa(data, nvals=subserie_sizes, fit_exp="poly")
+            for subserie_sizes in subserie_sizess
+        ]
         ltm_dict["dfa_max"] = max(alpha_dfa)
         ltm_dict["dfa_min"] = min(alpha_dfa)
         # Plotting the data
         self.plot_exponents(
-            factors,
+            # factors,
+            powers,
             alpha_dfa,
             method="Alpha DFA",
             xlabel="Factor",
@@ -435,16 +449,24 @@ class ProcessStation:
         )
 
         # Calculating LTM using Generalized Hurst Exponent (mfhurst_b)
+        """
+        # Original method to calculate distss. It's not being used anymore to make it compatible with Hurst R/S
         factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
         distss = [
-            nolds.logarithmic_n(1, max(20, 0.02 * total), factor) for factor in factors
+           nolds.logarithmic_n(1, max(20, 0.02 * total), factor) for factor in factors
         ]
-        hurst_ghe = [nolds.mfhurst_b(data, dists=dists, qvals=[2]) for dists in distss]
+        """
+
+        hurst_ghe = [
+            nolds.mfhurst_b(data, dists=subserie_sizes, qvals=[2])
+            for subserie_sizes in subserie_sizess
+        ]
         ltm_dict["ghe_max"] = max(hurst_ghe)
         ltm_dict["ghe_min"] = min(hurst_ghe)
         # Plotting the data
         self.plot_exponents(
-            factors,
+            # factors,
+            powers,
             hurst_ghe,
             method="Generalized Hurst Exponent",
             xlabel="Factor",
@@ -452,13 +474,20 @@ class ProcessStation:
         )
 
         # Calculating LTM using Ernest Chan's principles
+        """
+        # Original method to calculate n_lagss. It's not being used anymore to make it compatible with Hurst R/S
         n_lagss = np.arange(30, 1460, 30)
-        hurst_chan = [self.hurst_ernest_chan(n_lags) for n_lags in n_lagss]
+        """
+        hurst_chan = [
+            self.hurst_ernest_chan(subserie_sizes // 3)
+            for subserie_sizes in subserie_sizess
+        ]
         ltm_dict["chan_max"] = max(hurst_chan)
         ltm_dict["chan_min"] = min(hurst_chan)
         # Plotting the data
         self.plot_exponents(
-            n_lagss,
+            # n_lagss,
+            powers,
             hurst_chan,
             method="Ernest Chan's Hurst",
             xlabel="N_lags",
@@ -467,7 +496,7 @@ class ProcessStation:
 
         return ltm_dict
 
-    def hurst_ernest_chan(self, n_lags):
+    def hurst_ernest_chan(self, lags):
         """
         Returns the Hurst Exponent of the time series based on the principles presented by Ernest P. Chan (2013).
         The Ernest Chan's Hurst exponent was implemented following the code available at Quantstart
@@ -485,9 +514,6 @@ class ProcessStation:
         # data = data - data.mean()
 
         ts = list(data)
-
-        # Create the range of lag values
-        lags = range(2, n_lags)
 
         # Calculate the array of the variances of the lagged differences
         # This means log(std) = 0.5*log(var)
