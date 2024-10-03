@@ -10,6 +10,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 import nolds
 from pathlib import Path
+from statsmodels.tsa.stattools import adfuller
 
 
 # Multi run using hydra
@@ -17,6 +18,9 @@ from pathlib import Path
     version_base=None, config_path="../configurations", config_name="default_station"
 )
 def multi_run(cfg: DictConfig):
+    """
+    Executes multiple yaml files using Hydra
+    """
     print(OmegaConf.to_yaml(cfg))
     processor = ProcessStation(config=cfg, multi=True)
     processor.main()
@@ -24,6 +28,9 @@ def multi_run(cfg: DictConfig):
 
 # Single run using yaml configuration
 def single_run():
+    """
+    Performs a single yaml execution
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c",
@@ -39,8 +46,7 @@ def single_run():
     processor.main()
 
 
-class ProcessStation():
-
+class ProcessStation:
     def __init__(self, config, multi) -> None:
         if multi:
             self.config = config["stations"]
@@ -55,6 +61,9 @@ class ProcessStation():
         )
 
     def preprocess(self):
+        """
+        Preprocess data according to its yaml file
+        """
         if self.config["date_format"] == "%Y%j":
             # Calculating DATE from YEAR and DOY
             self.data["DATE"] = pd.to_datetime(
@@ -88,6 +97,9 @@ class ProcessStation():
         self.variable = self.config["variable_under_analysis"]
 
     def plot_data(self):
+        """
+        Plots the data and save a PDF file in the plots folder
+        """
         plt.plot(
             self.data[self.variable],
             label=self.variable,
@@ -104,6 +116,9 @@ class ProcessStation():
         plt.close()
 
     def fix_outliers(self):
+        """
+        Fix outliers with a specific value
+        """
         indexes = self.data.index[self.data[self.variable] == -999.0]
 
         # Window size to calculate the mean
@@ -122,6 +137,11 @@ class ProcessStation():
             self.data.loc[index, self.variable] = smoothed_value
 
     def check_monthly_trends(self):
+        """
+        Check if the data presents monthly trends.
+        The data across all years are group by month and day.
+        Then, for each month of the year, the dayly mean in plotted over the day data.
+        """
         sns_blue = sns.color_palette(as_cmap=True)[0]
 
         # Define a figure and a set of subplots with 4 lines and 3 columns
@@ -170,6 +190,11 @@ class ProcessStation():
         plt.close()
 
     def check_yearly_trends(self):
+        """
+        Check if the data presents yearly trends.
+        The data across all years are group by year and month.
+        Then, for each year, the monthly mean in plotted over the month data.
+        """
         sns_blue = sns.color_palette(as_cmap=True)[0]
 
         # Get the unique years from the data frame
@@ -227,6 +252,13 @@ class ProcessStation():
         plt.close()
 
     def get_periods(self):
+        """
+        Perform a FFT on the series to determine the top 5 meaningful periods
+
+        returns
+            ret: list[int]
+                List of top 5 periods in unities of time
+        """
         filtered_data = self.data[self.variable]
 
         # Calculate the fft of the data
@@ -270,33 +302,11 @@ class ProcessStation():
 
         return ret
 
-    def single_decompose(self, period):
-        results = seasonal_decompose(
-            x=self.data[self.variable],
-            model="additive",
-            period=period,
-        )
-
-        plt.figure(figsize=(12, 10))
-        plt.subplot(411)
-        plt.plot(self.data[self.variable], label="Series")
-        plt.legend(loc="best")
-        plt.subplot(412)
-        plt.plot(results.trend, label="Trend")
-        plt.legend(loc="best")
-        plt.subplot(413)
-        plt.plot(results.seasonal, label="Seasonal")
-        plt.legend(loc="best")
-        plt.subplot(414)
-        plt.plot(results.resid, label="Residual")
-        plt.legend(loc="best")
-        plt.savefig(
-            fname=self.config["single_decomposition_plot_path"],
-            format=self.config["plot_format"],
-        )
-        plt.close()
-
     def multi_decompose(self):
+        """
+        Performs MSTL decomposition on the time series
+        Saves a PDF graphic with trend, seasons and noise
+        """
         stl_kwargs = {"seasonal_deg": 2}
         model = MSTL(
             self.data[self.variable],
@@ -318,101 +328,151 @@ class ProcessStation():
         )
         plt.close()
 
-    def plot_hurst(self, x, y, method, xlabel, path):
+    def plot_exponents(self, x, y, method, xlabel, path):
+        """
+        Plots the multiple values of the computed exponents to check the series exponent behavior
+        """
         # Plotting the data
         plt.figure(figsize=(10, 6))
         plt.plot(
             x,
             y,
-            label=f"Hurst {method}",
+            label=f"{method}",
         )
-        plt.title(f"Hurst {method} (Station: {self.config['station']})")
+        plt.title(f"{method} (Station: {self.config['station']})")
         plt.xlabel(xlabel)
-        plt.ylabel("Hurst exponent")
+        plt.ylabel("Exponent")
         plt.legend()
         plt.savefig(fname=path, format=self.config["plot_format"])
         plt.close()
 
-    def compute_Hurst(self):
+    def check_stationarity(self, confidence_interval=0.05):
+        """
+        Executes de Augmented Dickey-Fuller test to check for stationarity in time series
+            Null Hypothesis (H0):
+                If failed to be rejected, it suggests the time series has a unit root, meaning it is non-stationary.
+                It has some time dependent structure.
+            Alternate Hypothesis (H1):
+                The null hypothesis is rejected; it suggests the time series does not have a unit root, meaning it is stationary.
+                It does not have time-dependent structure.
+        parameters
+            confidence_interval: float
+                Confidence Interval for the test
+        returns
+            boolean:
+                True if the series is stationary
+                False if the series is non-stationary
+        """
         data = self.data[self.variable]
-        print("Data: ", data.head())
-        data = data - data.mean()
-        print("Data - mean: ", data.head())
+        result = adfuller(data)
+        p_value = result[1]
+        if p_value > confidence_interval:
+            # Fail to reject H0. The data has a unit root and is non-stationary.
+            return False
+        else:
+            # Reject H0 (accept H1). The data does not have a unit root and is stationary.
+            return True
 
-        hurst_dict = {}
+    def compute_ltm(self):
+        """
+        Computes Long-Term Memory (LTM) exponents using different methods:
+            Hurst Rescaled Range (R/S) using various steps values to check behavior
+            Detrended Fluctuation Analysis (DFA) using multiple factors to check behavior
+            Generalized Hurst Exponent (GHE) using multiple factors to check behavior
+            Ernest Chan's HUrst algorithm using multiple lags to check behavior
 
-        # Computing Hurst using nolds package
+        returns
+            ltm_dict: dictionary
+                Dictionary with max and min hurst values for each method
+        """
+        data = self.data[self.variable]
+
+        ltm_dict = {}
+
+        # Computing LTM using nolds package
         total = len(self.data[self.variable])
 
-        # Calculating Hurst using Hurst exponent (hurst_rs)
+        # Calculating LTM using Hurst exponent (hurst_rs)
         nstepss = np.arange(15, 31)
         nvalss = [
-            nolds.logmid_n(total, ratio=1 / 4.0, nsteps=nsteps) for nsteps in nstepss
+            nolds.logmid_n(total, ratio=1 / 2.0, nsteps=nsteps) for nsteps in nstepss
         ]
         hurst_rs = [nolds.hurst_rs(data, nvals=nvals, fit="poly") for nvals in nvalss]
-        hurst_dict["rs_max"] = max(hurst_rs)
-        hurst_dict["rs_min"] = min(hurst_rs)
+        ltm_dict["rs_max"] = max(hurst_rs)
+        ltm_dict["rs_min"] = min(hurst_rs)
         # Plotting the data
-        self.plot_hurst(
+        self.plot_exponents(
             nstepss,
             hurst_rs,
-            method="R/S",
+            method="Hurst R/S",
             xlabel="Subserie size",
             path=self.config["hurst_rs_plot_path"],
         )
 
-        # Calculating Hurst using detrended fluctuation analysis (DFA) (dfa)
+        # Calculating LTM using detrended fluctuation analysis (DFA) (dfa)
         factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
         nvalss = [nolds.logarithmic_n(4, 0.1 * total, factor) for factor in factors]
-        hurst_dfa = [nolds.dfa(data, nvals=nvals, fit_exp="poly") for nvals in nvalss]
-        hurst_dict["dfa_max"] = max(hurst_dfa)
-        hurst_dict["dfa_min"] = min(hurst_dfa)
+        alpha_dfa = [nolds.dfa(data, nvals=nvals, fit_exp="poly") for nvals in nvalss]
+        ltm_dict["dfa_max"] = max(alpha_dfa)
+        ltm_dict["dfa_min"] = min(alpha_dfa)
         # Plotting the data
-        self.plot_hurst(
+        self.plot_exponents(
             factors,
-            hurst_dfa,
-            method="DFA",
+            alpha_dfa,
+            method="Alpha DFA",
             xlabel="Factor",
             path=self.config["hurst_dfa_plot_path"],
         )
 
-        # Calculating Hurst using Generalized Hurst Exponent (mfhurst_b)
+        # Calculating LTM using Generalized Hurst Exponent (mfhurst_b)
         factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
         distss = [
             nolds.logarithmic_n(1, max(20, 0.02 * total), factor) for factor in factors
         ]
-        hurst_ghe = [nolds.mfhurst_b(data, dists=dists) for dists in distss]
-        hurst_dict["ghe_max"] = max(hurst_ghe)
-        hurst_dict["ghe_min"] = min(hurst_ghe)
+        hurst_ghe = [nolds.mfhurst_b(data, dists=dists, qvals=[2]) for dists in distss]
+        ltm_dict["ghe_max"] = max(hurst_ghe)
+        ltm_dict["ghe_min"] = min(hurst_ghe)
         # Plotting the data
-        self.plot_hurst(
+        self.plot_exponents(
             factors,
             hurst_ghe,
-            method="GHE",
+            method="Generalized Hurst Exponent",
             xlabel="Factor",
             path=self.config["hurst_ghe_plot_path"],
         )
 
-        # Calculating Hurst using Ernest Chan's principles
+        # Calculating LTM using Ernest Chan's principles
         n_lagss = np.arange(30, 1460, 30)
         hurst_chan = [self.hurst_ernest_chan(n_lags) for n_lags in n_lagss]
-        hurst_dict["chan_max"] = max(hurst_chan)
-        hurst_dict["chan_min"] = min(hurst_chan)
+        ltm_dict["chan_max"] = max(hurst_chan)
+        ltm_dict["chan_min"] = min(hurst_chan)
         # Plotting the data
-        self.plot_hurst(
+        self.plot_exponents(
             n_lagss,
             hurst_chan,
-            method="CHAN",
+            method="Ernest Chan's Hurst",
             xlabel="N_lags",
             path=self.config["hurst_chan_plot_path"],
         )
 
-        return hurst_dict
+        return ltm_dict
 
     def hurst_ernest_chan(self, n_lags):
-        """Returns the Hurst Exponent of the time series vector ts"""
+        """
+        Returns the Hurst Exponent of the time series based on the principles presented by Ernest P. Chan (2013).
+        The Ernest Chan's Hurst exponent was implemented following the code available at Quantstart
+        https://www.quantstart.com/articles/Basics-of-Statistical-Mean-Reversion-Testing/
+
+        parameters
+            n_lags: int
+                Number of lags
+
+        returns
+            H: float
+                Hurst exponent
+        """
         data = self.data[self.variable]
-        data = data - data.mean()
+        # data = data - data.mean()
 
         ts = list(data)
 
@@ -431,7 +491,13 @@ class ProcessStation():
         return poly[0] * 2.0
 
     def get_mean_period(self):
-        # Used to get the mean data frequency
+        """
+        Calculates de mean period of a time series to use in the Lyapunov exponent calculation using FFT
+        Based on nolds: https://github.com/CSchoel/nolds/blob/main/nolds/measures.py#L247
+        returns
+            min_tsep: int
+                Mean time series period
+        """
         data = self.data[self.variable]
         data = np.asarray(data, dtype=np.float64)
         n = len(data)
@@ -444,23 +510,40 @@ class ProcessStation():
         min_tsep = min(min_tsep, int(max_tsep_factor * n))
         return int(min_tsep)
 
-    def compute_Lyapunov(self):
+    def compute_lyapunov(self):
+        """
+        Estimates the largest Lyapunov exponent using the algorithm of Rosenstein
+
+        returns
+            lyap_r: float
+                Largest Lyapunov exponent using the algorithm of Rosenstein
+        """
         min_tsep = self.get_mean_period()
         lyap_r = nolds.lyap_r(list(self.data[self.variable]), min_tsep=min_tsep)
         return lyap_r
 
-    def save_report(self, periods, hurst_dict, lyap_r):
+    def save_report(self, periods, ltm_dict, adfuller, lyap_r):
+        """
+        Saves a CSV report with all values calculated
+
+        params
+            periods: list
+            ltm_dict: dictionary
+            adfuller: boolean
+            lyap_r: float
+        """
         report = {
             "Station": self.config["station"],
             "Periods": [periods],
-            "Hurst (R/S) max": hurst_dict["rs_max"],
-            "Hurst (R/S) min": hurst_dict["rs_min"],
-            "Hurst (DFA) max": hurst_dict["dfa_max"],
-            "Hurst (DFA) min": hurst_dict["dfa_min"],
-            "Hurst (GHE) max": hurst_dict["ghe_max"],
-            "Hurst (GHE) min": hurst_dict["ghe_min"],
-            "Hurst (CHAN) max": hurst_dict["chan_max"],
-            "Hurst (CHAN) min": hurst_dict["chan_min"],
+            "ADFuller stationarity": adfuller,
+            "Hurst (R/S) max": ltm_dict["rs_max"],
+            "Hurst (R/S) min": ltm_dict["rs_min"],
+            "Alpha (DFA) max": ltm_dict["dfa_max"],
+            "Alpha (DFA) min": ltm_dict["dfa_min"],
+            "Hurst (GHE) max": ltm_dict["ghe_max"],
+            "Hurst (GHE) min": ltm_dict["ghe_min"],
+            "Hurst (CHAN) max": ltm_dict["chan_max"],
+            "Hurst (CHAN) min": ltm_dict["chan_min"],
             "Lyapunov (Rosenstein's)": lyap_r,
         }
 
@@ -477,6 +560,9 @@ class ProcessStation():
         df.to_csv(report_file, index=False)
 
     def main(self):
+        """
+        Executes the full process
+        """
         self.preprocess()
         self.fix_outliers()
         self.plot_data()
@@ -484,10 +570,10 @@ class ProcessStation():
         self.check_yearly_trends()
         periods = self.get_periods()
         self.multi_decompose()
-        hurst_dict = self.compute_Hurst()
-        lyap_r = self.compute_Lyapunov()
-        # lyap_r = 0
-        self.save_report(periods, hurst_dict, lyap_r)
+        ltm_dict = self.compute_ltm()
+        adfuller = self.check_stationarity(0.05)
+        lyap_r = self.compute_lyapunov()
+        self.save_report(periods, ltm_dict, adfuller, lyap_r)
 
 
 if __name__ == "__main__":
