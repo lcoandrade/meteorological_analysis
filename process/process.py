@@ -393,16 +393,26 @@ class ProcessStation:
         total = len(self.data[self.variable])
 
         # Calculating LTM using Hurst exponent (hurst_rs)
+        # Calculating a series of nvals of powers of 2
+        # max_power is the maximum k such as 2ˆk <= total/2 (i.e. we want the maximum k that divides the series in 2 parts)
+        max_power = int(np.log2(total / 2))
+        powers = np.arange(4, max_power + 1)
+        nvalss = [2 ** np.arange(1, power + 1) for power in powers]
+
+        """
+        # Original method to calculate nvals. It's not being used anymore because it was returning H > 1 in all cases.
         nstepss = np.arange(15, 31)
         nvalss = [
-            nolds.logmid_n(total, ratio=1 / 2.0, nsteps=nsteps) for nsteps in nstepss
+            nolds.logmid_n(total, ratio=1 / 4.0, nsteps=nsteps) for nsteps in nstepss
         ]
+        """
         hurst_rs = [nolds.hurst_rs(data, nvals=nvals, fit="poly") for nvals in nvalss]
         ltm_dict["rs_max"] = max(hurst_rs)
         ltm_dict["rs_min"] = min(hurst_rs)
         # Plotting the data
         self.plot_exponents(
-            nstepss,
+            # nstepss,
+            powers,
             hurst_rs,
             method="Hurst R/S",
             xlabel="Subserie size",
