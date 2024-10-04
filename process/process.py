@@ -377,8 +377,6 @@ class ProcessStation:
         Computes Long-Term Memory (LTM) exponents using different methods:
             Hurst Rescaled Range (R/S)
             Detrended Fluctuation Analysis (DFA)
-            Generalized Hurst Exponent (GHE)
-            Ernest Chan's Hurst algorithm
 
         returns
             ltm_dict: dictionary
