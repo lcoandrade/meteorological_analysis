@@ -12,7 +12,6 @@ import nolds
 from pathlib import Path
 from statsmodels.tsa.stattools import adfuller
 
-
 # Multi run using hydra
 @hydra.main(
     version_base=None, config_path="../configurations", config_name="default_station"
@@ -376,10 +375,10 @@ class ProcessStation:
     def compute_ltm(self):
         """
         Computes Long-Term Memory (LTM) exponents using different methods:
-            Hurst Rescaled Range (R/S) using various steps values to check behavior
-            Detrended Fluctuation Analysis (DFA) using multiple factors to check behavior
-            Generalized Hurst Exponent (GHE) using multiple factors to check behavior
-            Ernest Chan's HUrst algorithm using multiple lags to check behavior
+            Hurst Rescaled Range (R/S)
+            Detrended Fluctuation Analysis (DFA)
+            Generalized Hurst Exponent (GHE)
+            Ernest Chan's Hurst algorithm
 
         returns
             ltm_dict: dictionary
@@ -389,7 +388,7 @@ class ProcessStation:
 
         ltm_dict = {}
 
-        # Computing LTM using nolds package
+        # Total data size
         total = len(data)
 
         # Calculating LTM using Hurst exponent (hurst_rs)
@@ -398,40 +397,25 @@ class ProcessStation:
         max_power = int(np.log2(total / 2))
         # values of k used to compute 2ˆk
         powers = np.arange(4, max_power + 1)
-        # Divisors (i.e. list of 2ˆk) used to divide the series
-        divisorss = [2 ** np.arange(1, power + 1) for power in powers]
+        # Subseries sizes (i.e. list of total//2ˆk) used to split the series
+        subserie_sizess = [total // 2 ** np.arange(1, power + 1) for power in powers]
 
-        """
-        # Original method to calculate nvals. It's not being used anymore because it was returning H > 1 in all cases.
-        nstepss = np.arange(15, 31)
-        nvalss = [
-            nolds.logmid_n(total, ratio=1 / 4.0, nsteps=nsteps) for nsteps in nstepss
-        ]
-        """
         hurst_rs = [
-            nolds.hurst_rs(data, nvals=divisors, fit="poly") for divisors in divisorss
+            nolds.hurst_rs(data, nvals=subserie_sizes, fit="poly")
+            for subserie_sizes in subserie_sizess
         ]
         ltm_dict["rs_max"] = max(hurst_rs)
         ltm_dict["rs_min"] = min(hurst_rs)
         # Plotting the data
         self.plot_exponents(
-            # nstepss,
             powers,
             hurst_rs,
             method="Hurst R/S",
-            xlabel="Subserie size",
+            xlabel="Divisor factor k (i.e. 2ˆk)",
             path=self.config["hurst_rs_plot_path"],
         )
 
         # Calculating LTM using detrended fluctuation analysis (DFA) (dfa)
-        """
-        # Original method to calculate nvals. It's not being used anymore to make it compatible with Hurst R/S
-        factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
-        nvalss = [nolds.logarithmic_n(4, 0.1 * total, factor) for factor in factors]
-        """
-
-        # Subseries sizes (i.e. list of total//2ˆk) used to split the series
-        subserie_sizess = [total // 2 ** np.arange(1, power + 1) for power in powers]
         alpha_dfa = [
             nolds.dfa(data, nvals=subserie_sizes, fit_exp="poly")
             for subserie_sizes in subserie_sizess
@@ -440,96 +424,23 @@ class ProcessStation:
         ltm_dict["dfa_min"] = min(alpha_dfa)
         # Plotting the data
         self.plot_exponents(
-            # factors,
             powers,
             alpha_dfa,
             method="Alpha DFA",
-            xlabel="Factor",
+            xlabel="Divisor factor k (i.e. 2ˆk)",
             path=self.config["hurst_dfa_plot_path"],
-        )
-
-        # Calculating LTM using Generalized Hurst Exponent (mfhurst_b)
-        """
-        # Original method to calculate distss. It's not being used anymore to make it compatible with Hurst R/S
-        factors = [1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
-        distss = [
-           nolds.logarithmic_n(1, max(20, 0.02 * total), factor) for factor in factors
-        ]
-        """
-
-        hurst_ghe = [
-            nolds.mfhurst_b(data, dists=subserie_sizes, qvals=[2])
-            for subserie_sizes in subserie_sizess
-        ]
-        ltm_dict["ghe_max"] = max(hurst_ghe)
-        ltm_dict["ghe_min"] = min(hurst_ghe)
-        # Plotting the data
-        self.plot_exponents(
-            # factors,
-            powers,
-            hurst_ghe,
-            method="Generalized Hurst Exponent",
-            xlabel="Factor",
-            path=self.config["hurst_ghe_plot_path"],
-        )
-
-        # Calculating LTM using Ernest Chan's principles
-        """
-        # Original method to calculate n_lagss. It's not being used anymore to make it compatible with Hurst R/S
-        n_lagss = np.arange(30, 1460, 30)
-        """
-        hurst_chan = [
-            self.hurst_ernest_chan(subserie_sizes // 3)
-            for subserie_sizes in subserie_sizess
-        ]
-        ltm_dict["chan_max"] = max(hurst_chan)
-        ltm_dict["chan_min"] = min(hurst_chan)
-        # Plotting the data
-        self.plot_exponents(
-            # n_lagss,
-            powers,
-            hurst_chan,
-            method="Ernest Chan's Hurst",
-            xlabel="N_lags",
-            path=self.config["hurst_chan_plot_path"],
         )
 
         return ltm_dict
 
-    def hurst_ernest_chan(self, lags):
-        """
-        Returns the Hurst Exponent of the time series based on the principles presented by Ernest P. Chan (2013).
-        The Ernest Chan's Hurst exponent was implemented following the code available at Quantstart
-        https://www.quantstart.com/articles/Basics-of-Statistical-Mean-Reversion-Testing/
-
-        parameters
-            n_lags: int
-                Number of lags
-
-        returns
-            H: float
-                Hurst exponent
-        """
-        data = self.data[self.variable]
-        # data = data - data.mean()
-
-        ts = list(data)
-
-        # Calculate the array of the variances of the lagged differences
-        # This means log(std) = 0.5*log(var)
-        # Therefore, the exponent of polyfit needs to be multiplied by 2 to give H
-        tau = [np.sqrt(np.std(np.subtract(ts[lag:], ts[:-lag]))) for lag in lags]
-
-        # Use a linear fit to estimate the Hurst Exponent
-        poly = np.polyfit(np.log(lags), np.log(tau), 1)
-
-        # Return the Hurst exponent from the polyfit output
-        return poly[0] * 2.0
-
-    def get_mean_period(self):
+    def get_mean_period(self, max_tsep_factor):
         """
         Calculates de mean period of a time series to use in the Lyapunov exponent calculation using FFT
         Based on nolds: https://github.com/CSchoel/nolds/blob/main/nolds/measures.py#L247
+
+        params
+            max_tsep_factor: float
+                Factor to used in the min_tsep calculation
         returns
             min_tsep: int
                 Mean time series period
@@ -554,11 +465,27 @@ class ProcessStation:
             lyap_r: float
                 Largest Lyapunov exponent using the algorithm of Rosenstein
         """
-        min_tsep = self.get_mean_period()
-        lyap_r = nolds.lyap_r(list(self.data[self.variable]), min_tsep=min_tsep)
-        return lyap_r
+        lyap_dict = {}
+        factors = np.arange(0.1, 0.5, 0.05)
+        min_tseps = [self.get_mean_period(factor) for factor in factors]
+        lyap_r = [
+            nolds.lyap_r(list(self.data[self.variable]), min_tsep=min_tsep)
+            for min_tsep in min_tseps
+        ]
+        # Plotting the data
+        self.plot_exponents(
+            # factors,
+            factors,
+            lyap_r,
+            method="Lyapunov (Rosenstein's)",
+            xlabel="Period",
+            path=self.config["lyapunov_plot_path"],
+        )
+        lyap_dict["lyap_max"] = max(lyap_r)
+        lyap_dict["lyap_min"] = min(lyap_r)
+        return lyap_dict
 
-    def save_report(self, periods, ltm_dict, adfuller, lyap_r):
+    def save_report(self, periods, ltm_dict, lyap_dict):
         """
         Saves a CSV report with all values calculated
 
@@ -571,16 +498,12 @@ class ProcessStation:
         report = {
             "Station": self.config["station"],
             "Periods": [periods],
-            "ADFuller stationarity": adfuller,
             "Hurst (R/S) max": ltm_dict["rs_max"],
             "Hurst (R/S) min": ltm_dict["rs_min"],
             "Alpha (DFA) max": ltm_dict["dfa_max"],
             "Alpha (DFA) min": ltm_dict["dfa_min"],
-            "Hurst (GHE) max": ltm_dict["ghe_max"],
-            "Hurst (GHE) min": ltm_dict["ghe_min"],
-            "Hurst (CHAN) max": ltm_dict["chan_max"],
-            "Hurst (CHAN) min": ltm_dict["chan_min"],
-            "Lyapunov (Rosenstein's)": lyap_r,
+            "Lyapunov (Rosenstein's) max": lyap_dict["lyap_max"],
+            "Lyapunov (Rosenstein's) max": lyap_dict["lyap_min"],
         }
 
         # Saving the global report file
@@ -607,9 +530,8 @@ class ProcessStation:
         periods = self.get_periods()
         self.multi_decompose()
         ltm_dict = self.compute_ltm()
-        adfuller = self.check_stationarity(0.05)
-        lyap_r = self.compute_lyapunov()
-        self.save_report(periods, ltm_dict, adfuller, lyap_r)
+        lyap_dict = self.compute_lyapunov()
+        self.save_report(periods, ltm_dict, lyap_dict)
 
 
 if __name__ == "__main__":
