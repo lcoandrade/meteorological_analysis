@@ -474,7 +474,12 @@ class ProcessStation:
         """
         lyap_dict = {}
 
-        periods = periods.sort()
+        # Also testing the mean period as stated by
+        # Rosenstein, M. T., Collins, J. J., & de Luca, C. J. (1993).
+        # A practical method for calculating largest Lyapunov exponents from small data sets.
+        # Physica D: Nonlinear Phenomena, 65(1–2), 117–134. https://doi.org/10.1016/0167-2789(93)90009-P
+        periods.append(int(np.mean(periods)))
+        periods.sort()
 
         lyap_r = [
             nolds.lyap_r(list(self.data[self.variable]), min_tsep=period, fit="poly")
