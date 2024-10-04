@@ -393,12 +393,14 @@ class ProcessStation:
 
         # Calculating LTM using Hurst exponent (hurst_rs)
         # Calculating a series of nvals of powers of 2
-        # max_power is the maximum k such as 2ˆk <= total/2 (i.e. we want the maximum k that divides the series in 2 parts)
+        # max_power is the maximum k such that 2ˆk <= total/2 (i.e. 2ˆk is the maximum subseries size)
         max_power = int(np.log2(total / 2))
-        # values of k used to compute 2ˆk
-        powers = np.arange(4, max_power + 1)
-        # Subseries sizes (i.e. list of total//2ˆk) used to split the series
-        subserie_sizess = [total // 2 ** np.arange(1, power + 1) for power in powers]
+        # levels of subdivision (i.e. level 4 means 4 subdivisions in powers of 2)
+        levels = np.arange(3, max_power)
+        # Subseries sizes (i.e. list of 2ˆk)
+        subserie_sizess = [
+            2 ** np.arange(max_power - level, max_power + 1) for level in levels
+        ]
 
         hurst_rs = [
             nolds.hurst_rs(data, nvals=subserie_sizes, fit="poly")
@@ -408,23 +410,23 @@ class ProcessStation:
         ltm_dict["rs_min"] = min(hurst_rs)
         # Plotting the data
         self.plot_exponents(
-            powers,
+            levels,
             hurst_rs,
             method="Hurst R/S",
             xlabel="Divisor factor k (i.e. 2ˆk)",
             path=self.config["hurst_rs_plot_path"],
         )
 
-        # Calculating LTM using detrended fluctuation analysis (DFA) (dfa)
+        # Calculating LTM using detrended fluctuation analysis (DFA)
         alpha_dfa = [
-            nolds.dfa(data, nvals=subserie_sizes, fit_exp="poly")
+            nolds.dfa(data, nvals=subserie_sizes, fit_trend="poly", fit_exp="RANSAC")
             for subserie_sizes in subserie_sizess
         ]
         ltm_dict["dfa_max"] = max(alpha_dfa)
         ltm_dict["dfa_min"] = min(alpha_dfa)
         # Plotting the data
         self.plot_exponents(
-            powers,
+            levels,
             alpha_dfa,
             method="Alpha DFA",
             xlabel="Divisor factor k (i.e. 2ˆk)",
@@ -433,7 +435,7 @@ class ProcessStation:
 
         return ltm_dict
 
-    def get_mean_period(self, max_tsep_factor):
+    def get_mean_period(self):
         """
         Calculates de mean period of a time series to use in the Lyapunov exponent calculation using FFT
         Based on nolds: https://github.com/CSchoel/nolds/blob/main/nolds/measures.py#L247
@@ -448,34 +450,40 @@ class ProcessStation:
         data = self.data[self.variable]
         data = np.asarray(data, dtype=np.float64)
         n = len(data)
-        max_tsep_factor = 0.25
+        # max_tsep_factor = 0.25
         f = np.fft.rfft(data, n * 2 - 1)
         mf = np.fft.rfftfreq(n * 2 - 1) * f**2
         mf = np.sum(mf[1:]) / np.sum(f[1:] ** 2)
 
         min_tsep = np.ceil(1 / mf.real)
-        min_tsep = min(min_tsep, int(max_tsep_factor * n))
-        return int(min_tsep)
+        # min_tsep = min(min_tsep, int(max_tsep_factor * n))
+        # return int(min_tsep)
+        return min_tsep
 
-    def compute_lyapunov(self):
+    def compute_lyapunov(self, periods):
         """
         Estimates the largest Lyapunov exponent using the algorithm of Rosenstein
 
+        params
+            periods: list of ints
+                Top 5 FFT periods present in  the series
+
         returns
-            lyap_r: float
-                Largest Lyapunov exponent using the algorithm of Rosenstein
+            lyap_dict: dictionary
+                Dictionary with max and min lyap_r values
         """
         lyap_dict = {}
-        factors = np.arange(0.1, 0.5, 0.05)
-        min_tseps = [self.get_mean_period(factor) for factor in factors]
+
+        periods = periods.sort()
+
         lyap_r = [
-            nolds.lyap_r(list(self.data[self.variable]), min_tsep=min_tsep)
-            for min_tsep in min_tseps
+            nolds.lyap_r(list(self.data[self.variable]), min_tsep=period, fit="poly")
+            for period in periods
         ]
+
         # Plotting the data
         self.plot_exponents(
-            # factors,
-            factors,
+            periods,
             lyap_r,
             method="Lyapunov (Rosenstein's)",
             xlabel="Period",
@@ -483,6 +491,7 @@ class ProcessStation:
         )
         lyap_dict["lyap_max"] = max(lyap_r)
         lyap_dict["lyap_min"] = min(lyap_r)
+
         return lyap_dict
 
     def save_report(self, periods, ltm_dict, lyap_dict):
@@ -503,7 +512,7 @@ class ProcessStation:
             "Alpha (DFA) max": ltm_dict["dfa_max"],
             "Alpha (DFA) min": ltm_dict["dfa_min"],
             "Lyapunov (Rosenstein's) max": lyap_dict["lyap_max"],
-            "Lyapunov (Rosenstein's) max": lyap_dict["lyap_min"],
+            "Lyapunov (Rosenstein's) min": lyap_dict["lyap_min"],
         }
 
         # Saving the global report file
@@ -530,7 +539,7 @@ class ProcessStation:
         periods = self.get_periods()
         self.multi_decompose()
         ltm_dict = self.compute_ltm()
-        lyap_dict = self.compute_lyapunov()
+        lyap_dict = self.compute_lyapunov(periods)
         self.save_report(periods, ltm_dict, lyap_dict)
 
 
