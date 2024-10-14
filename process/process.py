@@ -328,10 +328,12 @@ class ProcessStation:
         )
         plt.close()
 
-        y = trend.to_numpy()
+        # Linear regression on the trend to check warmth or cooling
+        y = trend.values
         x = np.arange(len(y))
         result = linregress(x=x, y=y)
 
+        # Plotting the linear regression
         self.plot_trend_regression(x, y, result)
 
         return "warmth" if result.slope > 0 else "cooling"
