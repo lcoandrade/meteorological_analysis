@@ -343,7 +343,8 @@ class ProcessStation:
         Plots the trend regression to analyze wether there is a warmth trend
 
         params:
-            trend: MSTL trend decomposition
+            x: trend x-values as numpy array
+            y: trend y-values as numpy array
             result: LinregressResult instance
         """
 
