@@ -301,7 +301,7 @@ class ProcessStation:
 
         return ret
 
-    def multi_decompose(self):
+    def multi_decompose(self, periods):
         """
         Performs MSTL decomposition on the time series
         Saves a PDF graphic with trend, seasons and noise
@@ -309,7 +309,7 @@ class ProcessStation:
         stl_kwargs = {"seasonal_deg": 2}
         model = MSTL(
             self.data[self.variable],
-            periods=self.config["periods"],
+            periods=periods,
             stl_kwargs=stl_kwargs,
         )
         res = model.fit()
@@ -540,7 +540,7 @@ class ProcessStation:
         self.check_monthly_trends()
         self.check_yearly_trends()
         periods = self.get_periods()
-        self.multi_decompose()
+        self.multi_decompose(periods[:3])
         ltm_dict = self.compute_ltm()
         lyap_dict = self.compute_lyapunov(periods)
         self.save_report(periods, ltm_dict, lyap_dict)

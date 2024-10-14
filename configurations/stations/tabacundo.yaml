@@ -9,7 +9,6 @@ plot_format: 'pdf'
 data_plot_path: 'plots/tabacundo_data.pdf'
 monthly_trends_plot_path: 'plots/tabacundo_monthly_trends.pdf'
 yearly_trends_plot_path: 'plots/tabacundo_yearly_trends.pdf'
-periods: [365, 730, 1460]
 multi_decomposition_plot_path: 'plots/tabacundo_multi_decomposition.pdf'
 furier_plot_path: 'plots/tabacundo_furier.pdf'
 single_decomposition_plot_path: 'plots/tabacundo_single_decomposition.pdf'

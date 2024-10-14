@@ -9,7 +9,6 @@ plot_format: 'pdf'
 data_plot_path: 'plots/pomasqui_data.pdf'
 monthly_trends_plot_path: 'plots/pomasqui_monthly_trends.pdf'
 yearly_trends_plot_path: 'plots/pomasqui_yearly_trends.pdf'
-periods: [365, 730, 1460]
 multi_decomposition_plot_path: 'plots/pomasqui_multi_decomposition.pdf'
 furier_plot_path: 'plots/pomasqui_furier.pdf'
 single_decomposition_plot_path: 'plots/pomasqui_single_decomposition.pdf'

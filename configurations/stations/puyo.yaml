@@ -9,7 +9,6 @@ plot_format: 'pdf'
 data_plot_path: 'plots/puyo_data.pdf'
 monthly_trends_plot_path: 'plots/puyo_monthly_trends.pdf'
 yearly_trends_plot_path: 'plots/puyo_yearly_trends.pdf'
-periods: [365, 730, 1460]
 multi_decomposition_plot_path: 'plots/puyo_multi_decomposition.pdf'
 furier_plot_path: 'plots/puyo_furier.pdf'
 single_decomposition_plot_path: 'plots/puyo_single_decomposition.pdf'
