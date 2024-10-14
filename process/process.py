@@ -11,6 +11,7 @@ from omegaconf import DictConfig, OmegaConf
 import nolds
 from pathlib import Path
 from statsmodels.tsa.stattools import adfuller
+from scipy.stats import linregress
 
 # Multi run using hydra
 @hydra.main(
@@ -315,7 +316,7 @@ class ProcessStation:
         res = model.fit()
 
         # seasonal = res.seasonal  # contains all seasonal components
-        # trend = res.trend # contains the trend
+        trend = res.trend  # contains the trend
         # residual = res.resid # contains the residuals
 
         # set the size of the plot
@@ -323,6 +324,47 @@ class ProcessStation:
         res.plot()
         plt.savefig(
             fname=self.config["multi_decomposition_plot_path"],
+            format=self.config["plot_format"],
+        )
+        plt.close()
+
+        y = trend.to_numpy()
+        x = np.arange(len(y))
+        result = linregress(x=x, y=y)
+
+        self.plot_trend_regression(x, y, result)
+
+        return "warmth" if result.slope > 0 else "cooling"
+
+    def plot_trend_regression(self, x, y, result):
+        """
+        Plots the trend regression to analyze wether there is a warmth trend
+
+        params:
+            trend: MSTL trend decomposition
+            result: LinregressResult instance
+        """
+
+        # Plotting the data
+        plt.figure(figsize=(10, 6))
+        plt.plot(
+            x,
+            x * result.slope + result.intercept,
+            label=f"linear regression (Slope:{result.slope})",
+            color="r",
+        )
+        plt.plot(
+            x,
+            y,
+            label="Trend",
+            color="b",
+        )
+        plt.title(f"Trend's linear regression (Station: {self.config['station']})")
+        plt.xlabel("Days")
+        plt.ylabel(self.variable)
+        plt.legend()
+        plt.savefig(
+            fname=self.config["trend_regression_ploth_path"],
             format=self.config["plot_format"],
         )
         plt.close()
@@ -497,7 +539,7 @@ class ProcessStation:
 
         return lyap_dict
 
-    def save_report(self, periods, ltm_dict, lyap_dict):
+    def save_report(self, periods, ltm_dict, lyap_dict, change):
         """
         Saves a CSV report with all values calculated
 
@@ -516,6 +558,7 @@ class ProcessStation:
             "Alpha (DFA) min": ltm_dict["dfa_min"],
             "Lyapunov (Rosenstein's) max": lyap_dict["lyap_max"],
             "Lyapunov (Rosenstein's) min": lyap_dict["lyap_min"],
+            "Trend": change,
         }
 
         # Saving the global report file
@@ -540,10 +583,10 @@ class ProcessStation:
         self.check_monthly_trends()
         self.check_yearly_trends()
         periods = self.get_periods()
-        self.multi_decompose(periods[:3])
+        change = self.multi_decompose(periods[:3])
         ltm_dict = self.compute_ltm()
         lyap_dict = self.compute_lyapunov(periods)
-        self.save_report(periods, ltm_dict, lyap_dict)
+        self.save_report(periods, ltm_dict, lyap_dict, change)
 
 
 if __name__ == "__main__":
