@@ -1,10 +1,10 @@
 station: 'gualaquiza'
 file_path: 'stations/gualaquiza.csv'
-decimal: ','
-separator: ';'
+decimal: '.'
+separator: ','
 date_format: '%Y%j' # Means we are using YEAR and DOY
 variables: ['T2M']
-variable_under_analysis: 'T2M_MEAN'
+variable_under_analysis: 'T2M'
 plot_format: 'pdf'
 data_plot_path: 'plots/gualaquiza_data.pdf'
 monthly_trends_plot_path: 'plots/gualaquiza_monthly_trends.pdf'

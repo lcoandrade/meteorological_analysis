@@ -1,10 +1,10 @@
 station: 'telembi'
 file_path: 'stations/telembi.csv'
-decimal: ','
-separator: ';'
+decimal: '.'
+separator: ','
 date_format: '%Y%j' # Means we are using YEAR and DOY
 variables: ['T2M']
-variable_under_analysis: 'T2M_MEAN'
+variable_under_analysis: 'T2M'
 plot_format: 'pdf'
 data_plot_path: 'plots/telembi_data.pdf'
 monthly_trends_plot_path: 'plots/telembi_monthly_trends.pdf'
