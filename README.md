@@ -43,4 +43,4 @@ References from NOLDS:
 4. Basic dependencies: Matplotlib, Scikit-learn, Numpy, Pandas 
 
 ## Processing all configuration files with multirun (run in the base folder)
-python process/process.py -m stations=el_carmen,inaquito,peribuela,pomasqui,puerto_ila,tabacundo,tola,tumbaco
+python process/process.py -m stations=ambato,cuenca,el_carmen,gualaquiza,guayaquil,ibarra,la_libertad,latacunga,machala,naranjal,nueva_loja,orellana,puerto_ayora,puyo,quito,riobamba,san_lorenzo,sucre,telembi,tena,tulcan,zamora
