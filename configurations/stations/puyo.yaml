@@ -1,10 +1,10 @@
 station: 'puyo'
 file_path: 'stations/puyo.csv'
-decimal: '.'
+decimal: ','
 separator: ';'
-date_format: '%Y%j' # Means we are using YEAR and DOY columns to create DATE in running time
+date_format: '%Y%j' # Means we are using YEAR and DOY
 variables: ['T2M']
-variable_under_analysis: 'T2M'
+variable_under_analysis: 'T2M_MEAN'
 plot_format: 'pdf'
 data_plot_path: 'plots/puyo_data.pdf'
 monthly_trends_plot_path: 'plots/puyo_monthly_trends.pdf'

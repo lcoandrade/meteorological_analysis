@@ -1,0 +1,18 @@
+station: 'la_libertad'
+file_path: 'stations/la_libertad.csv'
+decimal: ','
+separator: ';'
+date_format: '%Y%j' # Means we are using YEAR and DOY
+variables: ['T2M']
+variable_under_analysis: 'T2M_MEAN'
+plot_format: 'pdf'
+data_plot_path: 'plots/la_libertad_data.pdf'
+monthly_trends_plot_path: 'plots/la_libertad_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/la_libertad_yearly_trends.pdf'
+multi_decomposition_plot_path: 'plots/la_libertad_multi_decomposition.pdf'
+furier_plot_path: 'plots/la_libertad_furier.pdf'
+single_decomposition_plot_path: 'plots/la_libertad_single_decomposition.pdf'
+hurst_rs_plot_path: 'plots/la_libertad_hurst_rs.pdf'
+hurst_dfa_plot_path: 'plots/la_libertad_hurst_dfa.pdf'
+lyapunov_plot_path: 'plots/la_libertad_lyapunov.pdf'
+trend_regression_ploth_path: 'plots/la_libertad_regression.pdf'

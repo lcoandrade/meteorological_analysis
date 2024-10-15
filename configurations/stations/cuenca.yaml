@@ -1,0 +1,18 @@
+station: 'cuenca'
+file_path: 'stations/cuenca.csv'
+decimal: ','
+separator: ';'
+date_format: '%Y%j' # Means we are using YEAR and DOY
+variables: ['T2M']
+variable_under_analysis: 'T2M_MEAN'
+plot_format: 'pdf'
+data_plot_path: 'plots/cuenca_data.pdf'
+monthly_trends_plot_path: 'plots/cuenca_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/cuenca_yearly_trends.pdf'
+multi_decomposition_plot_path: 'plots/cuenca_multi_decomposition.pdf'
+furier_plot_path: 'plots/cuenca_furier.pdf'
+single_decomposition_plot_path: 'plots/cuenca_single_decomposition.pdf'
+hurst_rs_plot_path: 'plots/cuenca_hurst_rs.pdf'
+hurst_dfa_plot_path: 'plots/cuenca_hurst_dfa.pdf'
+lyapunov_plot_path: 'plots/cuenca_lyapunov.pdf'
+trend_regression_ploth_path: 'plots/cuenca_regression.pdf'

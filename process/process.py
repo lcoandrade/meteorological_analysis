@@ -58,6 +58,7 @@ class ProcessStation:
             header=0,
             sep=self.config["separator"],
             decimal=self.config["decimal"],
+            skiprows=15,
         )
 
     def preprocess(self):

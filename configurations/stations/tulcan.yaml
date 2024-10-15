@@ -1,0 +1,18 @@
+station: 'tulcan'
+file_path: 'stations/tulcan.csv'
+decimal: ','
+separator: ';'
+date_format: '%Y%j' # Means we are using YEAR and DOY
+variables: ['T2M']
+variable_under_analysis: 'T2M_MEAN'
+plot_format: 'pdf'
+data_plot_path: 'plots/tulcan_data.pdf'
+monthly_trends_plot_path: 'plots/tulcan_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/tulcan_yearly_trends.pdf'
+multi_decomposition_plot_path: 'plots/tulcan_multi_decomposition.pdf'
+furier_plot_path: 'plots/tulcan_furier.pdf'
+single_decomposition_plot_path: 'plots/tulcan_single_decomposition.pdf'
+hurst_rs_plot_path: 'plots/tulcan_hurst_rs.pdf'
+hurst_dfa_plot_path: 'plots/tulcan_hurst_dfa.pdf'
+lyapunov_plot_path: 'plots/tulcan_lyapunov.pdf'
+trend_regression_ploth_path: 'plots/tulcan_regression.pdf'

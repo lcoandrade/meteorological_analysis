@@ -2,8 +2,8 @@ station: 'el_carmen'
 file_path: 'stations/el_carmen.csv'
 decimal: ','
 separator: ';'
-date_format: '%d/%m/%Y' # Means we are using the provided DATE column
-variables: ['T2M_MAX', 'T2M_MIN']
+date_format: '%Y%j' # Means we are using YEAR and DOY
+variables: ['T2M']
 variable_under_analysis: 'T2M_MEAN'
 plot_format: 'pdf'
 data_plot_path: 'plots/el_carmen_data.pdf'

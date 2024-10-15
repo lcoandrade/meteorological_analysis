@@ -1,0 +1,18 @@
+station: 'puerto_ayora'
+file_path: 'stations/puerto_ayora.csv'
+decimal: ','
+separator: ';'
+date_format: '%Y%j' # Means we are using YEAR and DOY
+variables: ['T2M']
+variable_under_analysis: 'T2M_MEAN'
+plot_format: 'pdf'
+data_plot_path: 'plots/puerto_ayora_data.pdf'
+monthly_trends_plot_path: 'plots/puerto_ayora_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/puerto_ayora_yearly_trends.pdf'
+multi_decomposition_plot_path: 'plots/puerto_ayora_multi_decomposition.pdf'
+furier_plot_path: 'plots/puerto_ayora_furier.pdf'
+single_decomposition_plot_path: 'plots/puerto_ayora_single_decomposition.pdf'
+hurst_rs_plot_path: 'plots/puerto_ayora_hurst_rs.pdf'
+hurst_dfa_plot_path: 'plots/puerto_ayora_hurst_dfa.pdf'
+lyapunov_plot_path: 'plots/puerto_ayora_lyapunov.pdf'
+trend_regression_ploth_path: 'plots/puerto_ayora_regression.pdf'

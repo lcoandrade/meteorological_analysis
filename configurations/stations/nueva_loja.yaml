@@ -1,0 +1,18 @@
+station: 'nueva_loja'
+file_path: 'stations/nueva_loja.csv'
+decimal: ','
+separator: ';'
+date_format: '%Y%j' # Means we are using YEAR and DOY
+variables: ['T2M']
+variable_under_analysis: 'T2M_MEAN'
+plot_format: 'pdf'
+data_plot_path: 'plots/nueva_loja_data.pdf'
+monthly_trends_plot_path: 'plots/nueva_loja_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/nueva_loja_yearly_trends.pdf'
+multi_decomposition_plot_path: 'plots/nueva_loja_multi_decomposition.pdf'
+furier_plot_path: 'plots/nueva_loja_furier.pdf'
+single_decomposition_plot_path: 'plots/nueva_loja_single_decomposition.pdf'
+hurst_rs_plot_path: 'plots/nueva_loja_hurst_rs.pdf'
+hurst_dfa_plot_path: 'plots/nueva_loja_hurst_dfa.pdf'
+lyapunov_plot_path: 'plots/nueva_loja_lyapunov.pdf'
+trend_regression_ploth_path: 'plots/nueva_loja_regression.pdf'

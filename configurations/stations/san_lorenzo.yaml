@@ -1,0 +1,18 @@
+station: 'san_lorenzo'
+file_path: 'stations/san_lorenzo.csv'
+decimal: ','
+separator: ';'
+date_format: '%Y%j' # Means we are using YEAR and DOY
+variables: ['T2M']
+variable_under_analysis: 'T2M_MEAN'
+plot_format: 'pdf'
+data_plot_path: 'plots/san_lorenzo_data.pdf'
+monthly_trends_plot_path: 'plots/san_lorenzo_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/san_lorenzo_yearly_trends.pdf'
+multi_decomposition_plot_path: 'plots/san_lorenzo_multi_decomposition.pdf'
+furier_plot_path: 'plots/san_lorenzo_furier.pdf'
+single_decomposition_plot_path: 'plots/san_lorenzo_single_decomposition.pdf'
+hurst_rs_plot_path: 'plots/san_lorenzo_hurst_rs.pdf'
+hurst_dfa_plot_path: 'plots/san_lorenzo_hurst_dfa.pdf'
+lyapunov_plot_path: 'plots/san_lorenzo_lyapunov.pdf'
+trend_regression_ploth_path: 'plots/san_lorenzo_regression.pdf'

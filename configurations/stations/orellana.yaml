@@ -1,0 +1,18 @@
+station: 'orellana'
+file_path: 'stations/orellana.csv'
+decimal: ','
+separator: ';'
+date_format: '%Y%j' # Means we are using YEAR and DOY
+variables: ['T2M']
+variable_under_analysis: 'T2M_MEAN'
+plot_format: 'pdf'
+data_plot_path: 'plots/orellana_data.pdf'
+monthly_trends_plot_path: 'plots/orellana_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/orellana_yearly_trends.pdf'
+multi_decomposition_plot_path: 'plots/orellana_multi_decomposition.pdf'
+furier_plot_path: 'plots/orellana_furier.pdf'
+single_decomposition_plot_path: 'plots/orellana_single_decomposition.pdf'
+hurst_rs_plot_path: 'plots/orellana_hurst_rs.pdf'
+hurst_dfa_plot_path: 'plots/orellana_hurst_dfa.pdf'
+lyapunov_plot_path: 'plots/orellana_lyapunov.pdf'
+trend_regression_ploth_path: 'plots/orellana_regression.pdf'

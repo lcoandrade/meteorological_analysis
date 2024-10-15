@@ -1,0 +1,18 @@
+station: 'guayaquil'
+file_path: 'stations/guayaquil.csv'
+decimal: ','
+separator: ';'
+date_format: '%Y%j' # Means we are using YEAR and DOY
+variables: ['T2M']
+variable_under_analysis: 'T2M_MEAN'
+plot_format: 'pdf'
+data_plot_path: 'plots/guayaquil_data.pdf'
+monthly_trends_plot_path: 'plots/guayaquil_monthly_trends.pdf'
+yearly_trends_plot_path: 'plots/guayaquil_yearly_trends.pdf'
+multi_decomposition_plot_path: 'plots/guayaquil_multi_decomposition.pdf'
+furier_plot_path: 'plots/guayaquil_furier.pdf'
+single_decomposition_plot_path: 'plots/guayaquil_single_decomposition.pdf'
+hurst_rs_plot_path: 'plots/guayaquil_hurst_rs.pdf'
+hurst_dfa_plot_path: 'plots/guayaquil_hurst_dfa.pdf'
+lyapunov_plot_path: 'plots/guayaquil_lyapunov.pdf'
+trend_regression_ploth_path: 'plots/guayaquil_regression.pdf'
