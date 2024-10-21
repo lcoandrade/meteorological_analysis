@@ -12,6 +12,7 @@ import nolds
 from pathlib import Path
 from statsmodels.tsa.stattools import adfuller, kpss
 from scipy.stats import linregress
+import pymannkendall as mk
 
 # Multi run using hydra
 @hydra.main(
@@ -456,6 +457,10 @@ class ProcessStation:
 
         return stationarity_dict
 
+    def check_trend(self, confidence_interval=0.05):
+        result = mk.original_test(self.data[self.variable])
+        return result.trend
+
     def compute_ltm(self):
         """
         Computes Long-Term Memory (LTM) exponents using different methods:
@@ -582,7 +587,7 @@ class ProcessStation:
         return lyap_dict
 
     def save_report(
-        self, periods, ltm_dict, lyap_dict, tendency_dict, stationarity_dict
+        self, periods, ltm_dict, lyap_dict, tendency_dict, stationarity_dict, trend
     ):
         """
         Saves a CSV report with all values calculated
@@ -610,6 +615,7 @@ class ProcessStation:
             "Adfuller stationarity": stationarity_dict["adfuller_stationarity"],
             "kpss stationarity": stationarity_dict["kpss_stationarity"],
             "Stationarity": stationarity_dict["stationarity"],
+            "Mann-Kendal trend": trend,
         }
 
         # Saving the global report file
@@ -636,9 +642,12 @@ class ProcessStation:
         periods = self.get_periods()
         tendency_dict = self.multi_decompose(periods[:3])
         stationarity_dict = self.check_stationarity()
+        trend = self.check_trend()
         ltm_dict = self.compute_ltm()
         lyap_dict = self.compute_lyapunov(periods)
-        self.save_report(periods, ltm_dict, lyap_dict, tendency_dict, stationarity_dict)
+        self.save_report(
+            periods, ltm_dict, lyap_dict, tendency_dict, stationarity_dict, trend
+        )
 
 
 if __name__ == "__main__":
