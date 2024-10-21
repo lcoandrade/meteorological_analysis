@@ -334,10 +334,19 @@ class ProcessStation:
         x = np.arange(len(y))
         result = linregress(x=x, y=y)
 
+        # Checking stationarity
+        stationary = self.check_stationarity(trend)
+
         # Plotting the linear regression
         self.plot_trend_regression(x, y, result)
 
-        return "warmth" if result.slope > 0 else "cooling"
+        trend_dict = {}
+        trend_dict["tendency"] = "warmth" if result.slope > 0 else "cooling"
+        trend_dict["tendency_begin"] = x[0] * result.slope + result.intercept
+        trend_dict["tendency_end"] = x[-1] * result.slope + result.intercept
+        trend_dict["tendency_stationarity"] = stationary
+
+        return trend_dict
 
     def plot_trend_regression(self, x, y, result):
         """
@@ -354,7 +363,7 @@ class ProcessStation:
         plt.plot(
             x,
             x * result.slope + result.intercept,
-            label=f"linear regression (Slope:{result.slope})",
+            label=f"linear regression:\nSlope:{result.slope:.2e}\nR-value:{result.rvalue:.2e}\nP-value:{result.pvalue:.2e}\nStd error:{result.stderr:.2e}",
             color="r",
         )
         plt.plot(
@@ -391,7 +400,7 @@ class ProcessStation:
         plt.savefig(fname=path, format=self.config["plot_format"])
         plt.close()
 
-    def check_stationarity(self, confidence_interval=0.05):
+    def check_stationarity(self, trend, confidence_interval=0.05):
         """
         Executes de Augmented Dickey-Fuller test to check for stationarity in time series
             Null Hypothesis (H0):
@@ -408,8 +417,7 @@ class ProcessStation:
                 True if the series is stationary
                 False if the series is non-stationary
         """
-        data = self.data[self.variable]
-        result = adfuller(data)
+        result = adfuller(trend.values)
         p_value = result[1]
         if p_value > confidence_interval:
             # Fail to reject H0. The data has a unit root and is non-stationary.
@@ -543,7 +551,7 @@ class ProcessStation:
 
         return lyap_dict
 
-    def save_report(self, periods, ltm_dict, lyap_dict, change):
+    def save_report(self, periods, ltm_dict, lyap_dict, tendency_dict):
         """
         Saves a CSV report with all values calculated
 
@@ -562,7 +570,12 @@ class ProcessStation:
             "Alpha (DFA) min": ltm_dict["dfa_min"],
             "Lyapunov (Rosenstein's) max": lyap_dict["lyap_max"],
             "Lyapunov (Rosenstein's) min": lyap_dict["lyap_min"],
-            "Trend": change,
+            "Tendency": tendency_dict["tendency"],
+            "Tendency max": tendency_dict["tendency_begin"],
+            "Tendency min": tendency_dict["tendency_end"],
+            "Delta Tendency": tendency_dict["tendency_end"]
+            - tendency_dict["tendency_begin"],
+            "Tendency stationarity": tendency_dict["tendency_stationarity"],
         }
 
         # Saving the global report file
@@ -587,10 +600,10 @@ class ProcessStation:
         self.check_monthly_trends()
         self.check_yearly_trends()
         periods = self.get_periods()
-        change = self.multi_decompose(periods[:3])
+        tendency_dict = self.multi_decompose(periods[:3])
         ltm_dict = self.compute_ltm()
         lyap_dict = self.compute_lyapunov(periods)
-        self.save_report(periods, ltm_dict, lyap_dict, change)
+        self.save_report(periods, ltm_dict, lyap_dict, tendency_dict)
 
 
 if __name__ == "__main__":
