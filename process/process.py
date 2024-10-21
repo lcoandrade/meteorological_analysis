@@ -10,7 +10,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 import nolds
 from pathlib import Path
-from statsmodels.tsa.stattools import adfuller
+from statsmodels.tsa.stattools import adfuller, kpss
 from scipy.stats import linregress
 
 # Multi run using hydra
@@ -334,9 +334,6 @@ class ProcessStation:
         x = np.arange(len(y))
         result = linregress(x=x, y=y)
 
-        # Checking stationarity
-        stationary = self.check_stationarity(trend)
-
         # Plotting the linear regression
         self.plot_trend_regression(x, y, result)
 
@@ -344,7 +341,6 @@ class ProcessStation:
         trend_dict["tendency"] = "warmth" if result.slope > 0 else "cooling"
         trend_dict["tendency_begin"] = x[0] * result.slope + result.intercept
         trend_dict["tendency_end"] = x[-1] * result.slope + result.intercept
-        trend_dict["tendency_stationarity"] = stationary
 
         return trend_dict
 
@@ -400,15 +396,22 @@ class ProcessStation:
         plt.savefig(fname=path, format=self.config["plot_format"])
         plt.close()
 
-    def check_stationarity(self, trend, confidence_interval=0.05):
+    def check_stationarity(self, confidence_interval=0.05):
         """
-        Executes de Augmented Dickey-Fuller test to check for stationarity in time series
+        Executes the Augmented Dickey-Fuller test to check for stationarity in time series
             Null Hypothesis (H0):
                 If failed to be rejected, it suggests the time series has a unit root, meaning it is non-stationary.
                 It has some time dependent structure.
             Alternate Hypothesis (H1):
                 The null hypothesis is rejected; it suggests the time series does not have a unit root, meaning it is stationary.
                 It does not have time-dependent structure.
+
+        Executes the Kwiatkowski-Phillips-Schmidt-Shin (“KPSS”) test to check for stationarity in time series
+            Null Hypothesis (H0):
+                The process is trend stationary.
+            Alternate Hypothesis (H1):
+                The series has a unit root (series is not stationary).
+
         parameters
             confidence_interval: float
                 Confidence Interval for the test
@@ -417,14 +420,41 @@ class ProcessStation:
                 True if the series is stationary
                 False if the series is non-stationary
         """
-        result = adfuller(trend.values)
+        data = self.data[self.variable]
+        result = adfuller(data)
         p_value = result[1]
         if p_value > confidence_interval:
             # Fail to reject H0. The data has a unit root and is non-stationary.
-            return False
+            adfuller_stationarity = False
         else:
             # Reject H0 (accept H1). The data does not have a unit root and is stationary.
-            return True
+            adfuller_stationarity = True
+
+        result = kpss(data)
+        p_value = result[1]
+        if p_value > confidence_interval:
+            # Fail to reject H0. The process is trend stationary.
+            kpss_stationarity = True
+        else:
+            # Reject H0 (accept H1). The series has a unit root (series is not stationary).
+            kpss_stationarity = False
+
+        if adfuller_stationarity and kpss_stationarity:
+            stationarity = "strictly stationary"
+        elif not adfuller_stationarity and not kpss_stationarity:
+            stationarity = "non stationary"
+        elif kpss_stationarity and not adfuller_stationarity:
+            stationarity = "trend stationary"
+        elif not kpss_stationarity and adfuller_stationarity:
+            stationarity = "difference stationary"
+
+        stationarity_dict = {
+            "adfuller_stationarity": adfuller_stationarity,
+            "kpss_stationarity": kpss_stationarity,
+            "stationarity": stationarity,
+        }
+
+        return stationarity_dict
 
     def compute_ltm(self):
         """
@@ -551,7 +581,9 @@ class ProcessStation:
 
         return lyap_dict
 
-    def save_report(self, periods, ltm_dict, lyap_dict, tendency_dict):
+    def save_report(
+        self, periods, ltm_dict, lyap_dict, tendency_dict, stationarity_dict
+    ):
         """
         Saves a CSV report with all values calculated
 
@@ -575,7 +607,9 @@ class ProcessStation:
             "Tendency min": tendency_dict["tendency_end"],
             "Delta Tendency": tendency_dict["tendency_end"]
             - tendency_dict["tendency_begin"],
-            "Tendency stationarity": tendency_dict["tendency_stationarity"],
+            "Adfuller stationarity": stationarity_dict["adfuller_stationarity"],
+            "kpss stationarity": stationarity_dict["kpss_stationarity"],
+            "Stationarity": stationarity_dict["stationarity"],
         }
 
         # Saving the global report file
@@ -601,9 +635,10 @@ class ProcessStation:
         self.check_yearly_trends()
         periods = self.get_periods()
         tendency_dict = self.multi_decompose(periods[:3])
+        stationarity_dict = self.check_stationarity()
         ltm_dict = self.compute_ltm()
         lyap_dict = self.compute_lyapunov(periods)
-        self.save_report(periods, ltm_dict, lyap_dict, tendency_dict)
+        self.save_report(periods, ltm_dict, lyap_dict, tendency_dict, stationarity_dict)
 
 
 if __name__ == "__main__":
