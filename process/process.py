@@ -14,11 +14,12 @@ from statsmodels.tsa.stattools import adfuller, kpss
 from scipy.stats import linregress
 import pymannkendall as mk
 
+
 # Multi run using hydra
 @hydra.main(
     version_base=None, config_path="../configurations", config_name="default_station"
 )
-def multi_run(cfg: DictConfig):
+def multi_run(cfg: DictConfig) -> None:
     """
     Executes multiple yaml files using Hydra
     """
@@ -28,7 +29,7 @@ def multi_run(cfg: DictConfig):
 
 
 # Single run using yaml configuration
-def single_run():
+def single_run() -> None:
     """
     Performs a single yaml execution
     """
@@ -62,7 +63,7 @@ class ProcessStation:
             skiprows=15,
         )
 
-    def preprocess(self):
+    def preprocess(self) -> None:
         """
         Preprocess data according to its yaml file
         """
@@ -98,7 +99,7 @@ class ProcessStation:
 
         self.variable = self.config["variable_under_analysis"]
 
-    def plot_data(self):
+    def plot_data(self) -> None:
         """
         Plots the data and save a PDF file in the plots folder
         """
@@ -117,7 +118,7 @@ class ProcessStation:
         plt.savefig(fname=self.config["data_plot_path"], format=self.config['plot_format'])
         plt.close()
 
-    def check_monthly_trends(self):
+    def check_monthly_trends(self) -> None:
         """
         Check if the data presents monthly trends.
         The data across all years are group by month and day.
@@ -170,7 +171,7 @@ class ProcessStation:
         plt.savefig(fname=self.config["monthly_trends_plot_path"], format=self.config['plot_format'])
         plt.close()
 
-    def check_yearly_trends(self):
+    def check_yearly_trends(self) -> None:
         """
         Check if the data presents yearly trends.
         The data across all years are group by year and month.
@@ -232,7 +233,7 @@ class ProcessStation:
         plt.savefig(fname=self.config["yearly_trends_plot_path"], format=self.config['plot_format'])
         plt.close()
 
-    def get_periods(self):
+    def get_periods(self) -> list[int]:
         """
         Perform a FFT on the series to determine the top 5 meaningful periods
 
@@ -283,10 +284,13 @@ class ProcessStation:
 
         return ret
 
-    def multi_decompose(self, periods):
+    def multi_decompose(self, periods) -> dict:
         """
         Performs MSTL decomposition on the time series
         Saves a PDF graphic with trend, seasons and noise
+
+        returns:
+            trend_dict: dict
         """
         stl_kwargs = {"seasonal_deg": 2}
         model = MSTL(
@@ -324,7 +328,7 @@ class ProcessStation:
 
         return trend_dict
 
-    def plot_trend_regression(self, x, y, result):
+    def plot_trend_regression(self, x, y, result) -> None:
         """
         Plots the trend regression to analyze wether there is a warmth trend
 
@@ -358,7 +362,7 @@ class ProcessStation:
         )
         plt.close()
 
-    def plot_exponents(self, x, y, method, xlabel, path):
+    def plot_exponents(self, x, y, method, xlabel, path) -> None:
         """
         Plots the multiple values of the computed exponents to check the series exponent behavior
         """
@@ -376,7 +380,7 @@ class ProcessStation:
         plt.savefig(fname=path, format=self.config["plot_format"])
         plt.close()
 
-    def check_stationarity(self, confidence_interval=0.05):
+    def check_stationarity(self, confidence_interval=0.05) -> dict:
         """
         Executes the Augmented Dickey-Fuller test to check for stationarity in time series
             Null Hypothesis (H0):
@@ -396,9 +400,7 @@ class ProcessStation:
             confidence_interval: float
                 Confidence Interval for the test
         returns
-            boolean:
-                True if the series is stationary
-                False if the series is non-stationary
+            stationarity_dict: dict
         """
         data = self.data[self.variable]
         result = adfuller(data)
@@ -436,7 +438,7 @@ class ProcessStation:
 
         return stationarity_dict
 
-    def check_trend(self, confidence_interval=0.05):
+    def check_trend(self, confidence_interval=0.05) -> str:
         """
         Runs the Mann-Kendall test to check if the data presents increasing, decreasing or no trend
             Null Hypothesis (H0):
@@ -444,11 +446,13 @@ class ProcessStation:
             Alternate Hypothesis (H1):
                 Monotonic trend is present.
 
+            returns
+                trend: string
         """
         result = mk.original_test(self.data[self.variable])
         return result.trend
 
-    def compute_ltm(self):
+    def compute_ltm(self) -> dict:
         """
         Computes Long-Term Memory (LTM) exponents using different methods:
             Hurst Rescaled Range (R/S)
@@ -509,7 +513,7 @@ class ProcessStation:
 
         return ltm_dict
 
-    def get_mean_period(self):
+    def get_mean_period(self) -> int:
         """
         Calculates de mean period of a time series to use in the Lyapunov exponent calculation using FFT
         Based on nolds: https://github.com/CSchoel/nolds/blob/main/nolds/measures.py#L247
@@ -534,7 +538,7 @@ class ProcessStation:
         # return int(min_tsep)
         return min_tsep
 
-    def compute_lyapunov(self, periods):
+    def compute_lyapunov(self, periods) -> dict:
         """
         Estimates the largest Lyapunov exponent using the algorithm of Rosenstein
 
@@ -575,7 +579,7 @@ class ProcessStation:
 
     def save_report(
         self, periods, ltm_dict, lyap_dict, tendency_dict, stationarity_dict, trend
-    ):
+    ) -> None:
         """
         Saves a CSV report with all values calculated
 
@@ -617,7 +621,7 @@ class ProcessStation:
             df = new_df
         df.to_csv(report_file, index=False)
 
-    def main(self):
+    def main(self) -> None:
         """
         Executes the full process
         """
