@@ -117,27 +117,6 @@ class ProcessStation:
         plt.savefig(fname=self.config["data_plot_path"], format=self.config['plot_format'])
         plt.close()
 
-    def fix_outliers(self):
-        """
-        Fix outliers with a specific value
-        """
-        indexes = self.data.index[self.data[self.variable] == -999.0]
-
-        # Window size to calculate the mean
-        window_size = 5
-
-        for index in indexes:
-            # Calculate the mean with the sliding window
-            start_index = max(self.data.index.min(), index - pd.Timedelta(window_size, unit="days"))
-            end_index = min(self.data.index.max(), index + pd.Timedelta(window_size, unit="days"))
-
-            data_window = self.data[self.variable].loc[start_index:end_index]
-
-            smoothed_value = data_window[data_window != 0].mean()
-
-            # Update the outlier with the mean value
-            self.data.loc[index, self.variable] = smoothed_value
-
     def check_monthly_trends(self):
         """
         Check if the data presents monthly trends.
@@ -458,6 +437,14 @@ class ProcessStation:
         return stationarity_dict
 
     def check_trend(self, confidence_interval=0.05):
+        """
+        Runs the Mann-Kendall test to check if the data presents increasing, decreasing or no trend
+            Null Hypothesis (H0):
+                No monotonic trend.
+            Alternate Hypothesis (H1):
+                Monotonic trend is present.
+
+        """
         result = mk.original_test(self.data[self.variable])
         return result.trend
 
@@ -635,7 +622,6 @@ class ProcessStation:
         Executes the full process
         """
         self.preprocess()
-        self.fix_outliers()
         self.plot_data()
         self.check_monthly_trends()
         self.check_yearly_trends()
